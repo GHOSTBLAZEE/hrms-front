@@ -7,6 +7,11 @@ export function useAttendanceMonth(date) {
 
   return useQuery({
     queryKey: ["attendance-month", month],
-    queryFn: () => getAttendanceMonthApi(month),
+    queryFn: async () => {
+      const res = await getAttendanceMonthApi(month);
+
+      // 🔑 IMPORTANT: unwrap Laravel resource response
+      return Array.isArray(res) ? res : res.data;
+    },
   });
 }
