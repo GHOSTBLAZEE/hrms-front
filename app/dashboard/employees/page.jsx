@@ -1,7 +1,7 @@
 "use client";
 
-import { DataTable } from "@/components/data-table";
-import { columns } from "./columns";
+import  {DataTable}  from "@/components/data-table/DataTable";
+import { columns } from "./column";
 import { useEmployees } from "@/hooks/useEmployees";
 
 export default function EmployeesPage() {

@@ -1,6 +1,8 @@
-import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar"
-import { AppSidebar } from "@/components/app-sidebar"
-import { SiteHeader } from "@/components/site-header"
+"use client";
+
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/app-sidebar";
+import { SiteHeader } from "@/components/site-header";
 
 export default function DashboardLayout({ children }) {
   return (
@@ -13,10 +15,8 @@ export default function DashboardLayout({ children }) {
       <AppSidebar variant="inset" />
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col p-4">
-          {children}
-        </div>
+        <div className="flex flex-1 flex-col p-4">{children}</div>
       </SidebarInset>
     </SidebarProvider>
-  )
+  );
 }

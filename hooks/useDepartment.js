@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as api from "@/lib/departmentApi";
 import { toast } from "sonner";
@@ -5,7 +8,10 @@ import { toast } from "sonner";
 export function useDepartments() {
   const qc = useQueryClient();
 
-  const q = useQuery({
+  const [editingDepartment, setEditingDepartment] = useState(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  const { data = [] } = useQuery({
     queryKey: ["departments"],
     queryFn: api.getDepartmentsApi,
   });
@@ -14,7 +20,7 @@ export function useDepartments() {
     mutationFn: api.createDepartmentApi,
     onSuccess: () => {
       toast.success("Department created");
-      qc.invalidateQueries(["departments"]);
+      qc.invalidateQueries({ queryKey: ["departments"] });
     },
   });
 
@@ -22,7 +28,7 @@ export function useDepartments() {
     mutationFn: ({ id, data }) => api.updateDepartmentApi(id, data),
     onSuccess: () => {
       toast.success("Department updated");
-      qc.invalidateQueries(["departments"]);
+      qc.invalidateQueries({ queryKey: ["departments"] });
     },
   });
 
@@ -30,9 +36,34 @@ export function useDepartments() {
     mutationFn: api.deleteDepartmentApi,
     onSuccess: () => {
       toast.success("Department deleted");
-      qc.invalidateQueries(["departments"]);
+      qc.invalidateQueries({ queryKey: ["departments"] });
     },
   });
 
-  return { ...q, create, update, remove };
+  const openCreateDialog = () => {
+    setEditingDepartment(null);
+    setIsDialogOpen(true);
+  };
+
+  const openEditDialog = (dept) => {
+    setEditingDepartment(dept);
+    setIsDialogOpen(true);
+  };
+
+  const closeDialog = () => {
+    setEditingDepartment(null);
+    setIsDialogOpen(false);
+  };
+
+  return {
+    departments: data,
+    editingDepartment,
+    isDialogOpen,
+    openCreateDialog,
+    openEditDialog,
+    closeDialog,
+    createDepartment: create.mutateAsync,
+    updateDepartment: update.mutateAsync,
+    deleteDepartment: remove.mutateAsync,
+  };
 }

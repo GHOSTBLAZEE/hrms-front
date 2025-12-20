@@ -1,27 +1,57 @@
 "use client";
-import { Button } from "@/components/ui/button";
+
+import { DataTable } from "@/components/data-table/DataTable";
+import { columns } from "./columns";
 import { useDepartments } from "@/hooks/useDepartment";
+import DepartmentDialog from "./DepartmentDialog";
+import { Button } from "@/components/ui/button";
 
 export default function DepartmentsPage() {
-  const { data, remove } = useDepartments();
+  const {
+    departments,
+    deleteDepartment,
+    openEditDialog,
+    openCreateDialog,
+    closeDialog,
+    isDialogOpen,
+    editingDepartment,
+    createDepartment,
+    updateDepartment,
+  } = useDepartments();
+
+  const handleSubmit = async (data) => {
+    if (editingDepartment) {
+      await updateDepartment({
+        id: editingDepartment.id,
+        data,
+      });
+    } else {
+      await createDepartment(data);
+    }
+    closeDialog();
+  };
 
   return (
-    <div className="p-6 space-y-4">
-      <h1 className="text-xl font-semibold">Departments</h1>
-      {data?.data.map((c) => (
-        <div key={c.id} className="flex justify-between border p-3 rounded">
-          <span>{c.name}</span>
-          {c.can.delete && (
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => remove.mutate(c.id)}
-            >
-              Delete
-            </Button>
-          )}
-        </div>
-      ))}
-    </div>
+    <>
+      <div className="flex justify-end mb-4">
+        <Button onClick={openCreateDialog}>Add Department</Button>
+      </div>
+
+      <DataTable
+        data={departments}
+        columns={columns({
+          onEdit: openEditDialog,
+          onDelete: deleteDepartment,
+        })}
+        globalFilterKeys={["name", "code", "status"]}
+      />
+
+      <DepartmentDialog
+        open={isDialogOpen}
+        onOpenChange={(open) => !open && closeDialog()}
+        initialData={editingDepartment}
+        onSubmit={handleSubmit}
+      />
+    </>
   );
 }

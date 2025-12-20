@@ -1,30 +1,39 @@
-"use client"
+"use client";
 
-import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader } from "@/components/ui/sidebar"
-import { NavMain } from "@/components/nav-main"
-import { NavSecondary } from "@/components/nav-secondary"
-import { NavUser } from "@/components/nav-user"
-import { menu } from "@/config/menuConfig"
-import { useAuth } from "@/hooks/useAuth"
-import { hasPermission } from "@/lib/permissions"
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarHeader,
+} from "@/components/ui/sidebar";
+import { NavMain } from "@/components/nav-main";
+import { NavSecondary } from "@/components/nav-secondary";
+import { NavUser } from "@/components/nav-user";
+import { menu } from "@/config/menu";
+import { useAuth } from "@/hooks/useAuth";
+import { hasPermission } from "@/lib/permissions";
 
 export function AppSidebar(props) {
-  const { user, permissions } = useAuth()
+  const { user, permissions, isLoading } = useAuth();
+
+  // 🔑 WAIT until auth is loaded
+  if (isLoading) {
+    return null; // or skeleton loader
+  }
 
   const mainItems = menu.main.filter((item) =>
     hasPermission(permissions, item.permissions)
-  )
+  );
 
   const settingsItems = menu.settings.filter((item) =>
     hasPermission(permissions, item.permissions)
-  )
+  );
+  console.log("permissions:", permissions, Array.isArray(permissions));
 
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
-        <div className="px-3 py-2 text-lg font-semibold">
-          HRMS
-        </div>
+        <div className="px-3 py-2 text-lg font-semibold">HRMS</div>
       </SidebarHeader>
 
       <SidebarContent>
@@ -34,9 +43,7 @@ export function AppSidebar(props) {
         )}
       </SidebarContent>
 
-      <SidebarFooter>
-        {user && <NavUser user={user} />}
-      </SidebarFooter>
+      <SidebarFooter>{user && <NavUser user={user} />}</SidebarFooter>
     </Sidebar>
-  )
+  );
 }

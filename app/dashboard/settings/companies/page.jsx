@@ -1,9 +1,10 @@
 "use client";
 import { Button } from "@/components/ui/button";
-import { useCompanies } from "@/hooks/useCompanies";
+import { useCompanies } from "@/hooks/useCompany";
 
 export default function CompaniesPage() {
   const { data, remove } = useCompanies();
+console.log(data,remove);
 
   return (
     <div className="p-6 space-y-4">
