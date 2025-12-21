@@ -16,7 +16,7 @@ export default function LoginPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
 
-  const [email, setEmail] = useState("admin@example.com");
+  const [email, setEmail] = useState("admin@nova.com");
   const [password, setPassword] = useState("password");
 
   const loginMutation = useMutation({
