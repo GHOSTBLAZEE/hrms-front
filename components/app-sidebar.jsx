@@ -11,24 +11,52 @@ import { NavSecondary } from "@/components/nav-secondary";
 import { NavUser } from "@/components/nav-user";
 import { menu } from "@/config/menu";
 import { useAuth } from "@/hooks/useAuth";
-import { hasPermission } from "@/lib/permissions";
+
+/* ================= PERMISSION HELPERS ================= */
+
+function canShowItem(userPermissions, requiredPermissions) {
+  if (!requiredPermissions || requiredPermissions.length === 0) return true;
+
+  return requiredPermissions.some((p) =>
+    userPermissions.includes(p)
+  );
+}
+
+function canShowAnySubMenu(userPermissions, item) {
+  if (!item.subMenu) return false;
+
+  return item.subMenu.some((sub) =>
+    canShowItem(userPermissions, sub.permissions)
+  );
+}
+
+/* ================= SIDEBAR ================= */
 
 export function AppSidebar(props) {
-  const { user, permissions, isLoading } = useAuth();
+  const { user, permissions = [], isLoading } = useAuth();
 
-  // 🔑 WAIT until auth is loaded
-  if (isLoading) {
-    return null; // or skeleton loader
-  }
+  if (isLoading) return null;
 
-  const mainItems = menu.main.filter((item) =>
-    hasPermission(permissions, item.permissions)
-  );
+  const mainItems = menu.main
+    .map((item) => {
+      const showParent =
+        canShowItem(permissions, item.permissions) ||
+        canShowAnySubMenu(permissions, item);
+
+      if (!showParent) return null;
+
+      return {
+        ...item,
+        subMenu: item.subMenu?.filter((sub) =>
+          canShowItem(permissions, sub.permissions)
+        ),
+      };
+    })
+    .filter(Boolean);
 
   const settingsItems = menu.settings.filter((item) =>
-    hasPermission(permissions, item.permissions)
+    canShowItem(permissions, item.permissions)
   );
-  console.log("permissions:", permissions, Array.isArray(permissions));
 
   return (
     <Sidebar collapsible="offcanvas" {...props}>
@@ -43,7 +71,9 @@ export function AppSidebar(props) {
         )}
       </SidebarContent>
 
-      <SidebarFooter>{user && <NavUser user={user} />}</SidebarFooter>
+      <SidebarFooter>
+        {user && <NavUser user={user} />}
+      </SidebarFooter>
     </Sidebar>
   );
 }
