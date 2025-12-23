@@ -6,6 +6,8 @@ import AuditLogTable from "./components/AuditLogTable";
 import AuditFilters from "./components/AuditFilters";
 import apiClient from "@/lib/apiClient";
 import AuditLogDrawer from "./components/AuditLogDrawer";
+import { useAuth } from "@/hooks/useAuth";
+import AuditExportButton from "./components/AuditExportButton";
 
 async function fetchAuditLogs(params) {
   const res = await apiClient.get("/api/v1/audit-logs", {
@@ -16,6 +18,9 @@ async function fetchAuditLogs(params) {
 
 export default function AuditLogsPage() {
   const [selectedLog, setSelectedLog] = useState(null);
+  const { permissions } = useAuth();
+  const canExport = permissions.includes("view audit logs");
+
   const [filters, setFilters] = useState({
     search: "",
     event: "",
@@ -32,14 +37,25 @@ export default function AuditLogsPage() {
 
   return (
     <div className="space-y-6">
-      <header>
-        <h1 className="text-2xl font-semibold">Audit Logs</h1>
-        <p className="text-muted-foreground text-sm">
-          System activity & compliance records
-        </p>
+      <header className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold">Audit Logs</h1>
+          <p className="text-muted-foreground text-sm">
+            System activity & compliance records
+          </p>
+        </div>
+
+        {canExport && (
+          <AuditExportButton filters={filters} disabled={!data?.data?.length} />
+        )}
       </header>
 
-      <AuditFilters filters={filters} onChange={setFilters} />
+      <AuditFilters
+        filters={filters}
+        onChange={setFilters}
+        logs={data?.data || []}
+        canExport={canExport}
+      />
 
       <AuditLogTable
         logs={data?.data || []}
