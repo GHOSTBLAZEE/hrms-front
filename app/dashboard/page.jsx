@@ -7,13 +7,13 @@ import PendingApprovals from "@/components/dashboard/PendingApprovals";
 import StatsCard from "@/components/dashboard/StatsCard";
 
 export default function DashboardPage() {
-  const { data, isLoading } = useDashboard();
+  // const { data, isLoading } = useDashboard();
 
-  if (isLoading) return <div className="p-6">Loading...</div>;
+  // if (isLoading) return <div className="p-6">Loading...</div>;
 
   return (
     <div className="p-6 space-y-6">
-      <h1 className="text-2xl font-semibold">Dashboard</h1>
+      {/* <h1 className="text-2xl font-semibold">Dashboard</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <TodaySummaryCard attendance={data.todayAttendance} />
@@ -25,7 +25,8 @@ export default function DashboardPage() {
 
       {data.can.view_approvals && (
         <PendingApprovals leaves={data.pendingLeaves} />
-      )}
+      )} */}
+      test
     </div>
   );
 }

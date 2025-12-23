@@ -130,7 +130,7 @@ export const menu = {
         },
         {
           title: "Payroll Report",
-          url: "/dashboard/payroll/reports",
+          url: "/dashboard/reports/payroll",
           permissions: ["view payroll reports"],
         },
         {
