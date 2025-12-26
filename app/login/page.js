@@ -24,15 +24,16 @@ export default function LoginPage() {
 
     onSuccess: async () => {
       toast.success("Login successful");
-      await queryClient.invalidateQueries(["me"]);
-      router.push("/dashboard");
+
+      // ✅ correct v4 way
+      await queryClient.invalidateQueries({ queryKey: ["me"] });
+
+      router.replace("/dashboard");
     },
 
     onError: (err) => {
       toast.error(
-        err?.data?.message ||
-          err?.message ||
-          "Invalid email or password"
+        err?.data?.message || err?.message || "Invalid email or password"
       );
     },
   });
@@ -42,7 +43,6 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted px-4">
       <div className="grid w-full max-w-4xl grid-cols-1 md:grid-cols-2 shadow-lg rounded-xl overflow-hidden">
-
         {/* LEFT PANEL */}
         <Card className="rounded-none border-r bg-primary text-primary-foreground">
           <CardContent className="h-full flex flex-col justify-center p-8 space-y-4">
@@ -51,7 +51,8 @@ export default function LoginPage() {
               Enterprise Human Resource Management System
             </p>
             <p className="text-sm opacity-80">
-              Manage employees, attendance, leave, payroll and more — all in one place.
+              Manage employees, attendance, leave, payroll and more — all in one
+              place.
             </p>
           </CardContent>
         </Card>
@@ -84,14 +85,11 @@ export default function LoginPage() {
               onClick={() => loginMutation.mutate()}
               disabled={loading}
             >
-              {loading && (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              )}
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Sign in
             </Button>
           </CardContent>
         </Card>
-
       </div>
     </div>
   );

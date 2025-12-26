@@ -11,37 +11,36 @@ import { useAuth } from "@/hooks/useAuth";
 import { routePermissions } from "@/config/route-permissions";
 
 export default function DashboardLayout({ children }) {
-  const { permissions = [], isLoading } = useAuth();
+  const { user, permissions = [], isLoading } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
-
-  /* ================= ROUTE GUARD ================= */
+  console.log(user, permissions);
 
   useEffect(() => {
     if (isLoading) return;
 
-    const rule = routePermissions.find((r) =>
-      pathname.startsWith(r.path)
-    );
+    // 🔐 AUTH GUARD
+    if (!user) {
+      router.replace("/login");
+      return;
+    }
 
-    // No rule → allowed
+    // 🔐 PERMISSION GUARD
+    const rule = routePermissions.find((r) => pathname.startsWith(r.path));
+
     if (!rule) return;
 
-    const allowed = rule.permissions.some((p) =>
-      permissions.includes(p)
-    );
+    const allowed = rule.permissions.some((p) => permissions.includes(p));
 
     if (!allowed) {
       router.replace("/unauthorized");
     }
-  }, [pathname, permissions, isLoading, router]);
+  }, [user, pathname, permissions, isLoading, router]);
 
-  // Prevent flash of unauthorized content
-  if (isLoading) {
-    return null; // or skeleton loader
+  // ⛔ Prevent UI flash
+  if (isLoading || !user) {
+    return null;
   }
-
-  /* ================= LAYOUT ================= */
 
   return (
     <SidebarProvider
@@ -54,9 +53,7 @@ export default function DashboardLayout({ children }) {
 
       <SidebarInset>
         <SiteHeader />
-        <div className="flex flex-1 flex-col p-4">
-          {children}
-        </div>
+        <div className="flex flex-1 flex-col p-4">{children}</div>
       </SidebarInset>
     </SidebarProvider>
   );
