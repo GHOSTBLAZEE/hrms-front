@@ -15,21 +15,14 @@ export default function AttendanceMonthlyReportPage() {
   const [month, setMonth] = useState(now.getMonth() + 1);
 
   const canView = hasPermission(permissions, ["view attendance reports"]);
-const canExport = hasPermission(
-  permissions,
-  ["export attendance reports"]
-);
+  const canExport = hasPermission(permissions, ["export attendance reports"]);
 
-  const { data = [], isLoading } = useAttendanceMonthlyReport(
+  const { data, isLoading } = useAttendanceMonthlyReport(
     canView ? { year, month } : {}
   );
 
   if (!canView) {
-    return (
-      <div className="p-6 text-sm text-muted-foreground">
-        You are not authorized to view attendance reports.
-      </div>
-    );
+    return <div className="p-6 text-sm">Unauthorized</div>;
   }
 
   return (
@@ -44,7 +37,7 @@ const canExport = hasPermission(
       />
 
       <AttendanceReportTable
-        data={data}
+        data={data?.data ?? []}
         loading={isLoading}
       />
     </div>

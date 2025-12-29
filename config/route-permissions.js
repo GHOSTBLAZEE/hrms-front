@@ -1,24 +1,45 @@
 export const routePermissions = [
+  /* ================= ATTENDANCE ================= */
   {
-    path: "/dashboard/attendance/reports",
-    permissions: ["view attendance reports"],
+    path: "/dashboard/attendance",
+    permissions: ["view attendance"],
   },
+
+  /* ================= LEAVES ================= */
+  {
+    path: "/dashboard/leaves",
+    permissions: ["view leave"],
+  },
+
+  /* ================= PAYROLL ================= */
   {
     path: "/dashboard/payroll",
     permissions: ["view payroll"],
   },
+
+  /* ================= REPORTS ================= */
   {
-    path: "/dashboard/payroll/reports",
-    permissions: ["view payroll reports"],
+    path: "/dashboard/reports/attendance",
+    permissions: ["view attendance reports"],
   },
   {
-    path: "/dashboard/leaves/reports",
+    path: "/dashboard/reports/leaves",
     permissions: ["view leave reports"],
+  },
+  {
+    path: "/dashboard/reports/payroll",
+    permissions: ["view payroll reports"],
   },
   {
     path: "/dashboard/reports/audit-logs",
     permissions: ["view audit logs"],
   },
+  {
+    path: "/dashboard/reports/exports",
+    permissions: ["view exports"],
+  },
+
+  /* ================= SETTINGS ================= */
   {
     path: "/dashboard/settings",
     permissions: [

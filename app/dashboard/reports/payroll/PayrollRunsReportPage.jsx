@@ -6,12 +6,17 @@ import PayrollRunsReportTable from "./components/PayrollRunsReportTable";
 
 export default function PayrollRunsReportPage() {
   const { data, isLoading, error } = useQuery({
-    queryKey: ["payroll-runs-report"],
-    queryFn: async () => {
-      const res = await apiClient.get("/reports/payroll-runs");
-      return res.data;
-    },
-  });
+  queryKey: ["payroll-runs-report"],
+  queryFn: async () => {
+    const res = await apiClient.get(
+      "/reports/payroll-runs"
+    );
+    return res.data;
+  },
+  staleTime: Infinity,
+  cacheTime: Infinity,
+});
+
 
   if (isLoading) return <div>Loading payroll reports…</div>;
   if (error) return <div>Failed to load payroll reports</div>;

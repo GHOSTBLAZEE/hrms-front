@@ -1,49 +1,32 @@
 "use client";
 
-import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import PayrollRunHeader from "./PayrollRunHeader";
-import AttendanceSnapshotTable from "./AttendanceSnapshotTable";
-import RunPayrollPanel from "./RunPayrollPanel";
+import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
+import apiClient from "@/lib/apiClient";
 
 export default function PayrollRunsPage() {
-  const [month, setMonth] = useState(
-    new Date().toISOString().slice(0, 7)
-  );
+  const router = useRouter();
 
-  const { data: runData } = useQuery({
-    queryKey: ["payroll-run", month],
-    queryFn: () =>
-      fetch(`/api/v1/payroll/runs/${month}`, {
-        credentials: "include",
-      }).then((r) => r.json()),
+  const { data, isLoading } = useQuery({
+    queryKey: ["latest-payroll-run"],
+    queryFn: async () => {
+      const res = await apiClient.get("/reports/payroll-runs");
+      return res.data;
+    },
   });
 
-  const finalizeMutation = useMutation({
-    mutationFn: () =>
-      fetch(`/api/v1/payroll/runs/${month}/finalize`, {
-        method: "POST",
-        credentials: "include",
-      }),
-  });
+  if (isLoading) return <div className="p-6">Loading…</div>;
 
-  return (
-    <div className="p-6 space-y-6">
-      <PayrollRunHeader
-        month={month}
-        setMonth={setMonth}
-        status={runData?.status}
-      />
+  const latestRun = data?.data?.[0];
 
-      <AttendanceSnapshotTable
-        data={runData?.snapshot ?? []}
-      />
+  if (!latestRun) {
+    return (
+      <div className="p-6 text-muted-foreground">
+        No payroll runs found.
+      </div>
+    );
+  }
 
-      <RunPayrollPanel
-        canRun={runData?.can_finalize}
-        status={runData?.status}
-        onRun={finalizeMutation.mutate}
-      />
-    </div>
-  );
+  router.replace(`/dashboard/payroll/runs/${latestRun.id}`);
+  return null;
 }

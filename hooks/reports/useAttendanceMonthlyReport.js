@@ -1,3 +1,5 @@
+import { useQuery } from "@tanstack/react-query";
+
 export function useAttendanceMonthlyReport({ month, year }) {
   return useQuery({
     queryKey: ["attendance-monthly-report", year, month],

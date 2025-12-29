@@ -48,11 +48,6 @@ export const menu = {
           url: "/dashboard/attendance/team",
           permissions: ["view team attendance"],
         },
-        {
-          title: "Attendance Reports",
-          url: "/dashboard/attendance/reports/monthly",
-          permissions: ["view attendance reports"],
-        },
       ],
     },
 
@@ -73,11 +68,6 @@ export const menu = {
           url: "/dashboard/leaves/approvals",
           permissions: ["approve leave"],
         },
-        {
-          title: "Leave Reports",
-          url: "/dashboard/leaves/reports",
-          permissions: ["view leave reports"],
-        },
       ],
     },
 
@@ -94,19 +84,14 @@ export const menu = {
           permissions: ["view payroll"],
         },
         {
-          title: "Attendance Lock",
-          url: "/dashboard/payroll/attendance-locks",
-          permissions: ["manage payroll"],
-        },
-        {
           title: "Payslips",
           url: "/dashboard/payroll/payslips",
           permissions: ["view payslips"],
         },
         {
-          title: "Payroll Reports",
-          url: "/dashboard/payroll/reports",
-          permissions: ["view payroll reports"],
+          title: "Salary Structures",
+          url: "/dashboard/payroll/salary-structures",
+          permissions: ["manage salary structures"],
         },
       ],
     },
@@ -116,20 +101,26 @@ export const menu = {
       title: "Reports",
       url: "/dashboard/reports",
       icon: FileBarChart2,
-      permissions: ["view reports"],
+      permissions: [
+        "view attendance reports",
+        "view leave reports",
+        "view payroll reports",
+        "view audit logs",
+        "view exports",
+      ],
       subMenu: [
         {
-          title: "Attendance Report",
-          url: "/dashboard/attendance/reports/monthly",
+          title: "Attendance Reports",
+          url: "/dashboard/reports/attendance",
           permissions: ["view attendance reports"],
         },
         {
-          title: "Leave Report",
-          url: "/dashboard/leaves/reports",
+          title: "Leave Reports",
+          url: "/dashboard/reports/leaves",
           permissions: ["view leave reports"],
         },
         {
-          title: "Payroll Report",
+          title: "Payroll Reports",
           url: "/dashboard/reports/payroll",
           permissions: ["view payroll reports"],
         },
@@ -137,6 +128,11 @@ export const menu = {
           title: "Audit Logs",
           url: "/dashboard/reports/audit-logs",
           permissions: ["view audit logs"],
+        },
+        {
+          title: "Export History",
+          url: "/dashboard/reports/exports",
+          permissions: ["view exports"],
         },
       ],
     },
@@ -176,3 +172,5 @@ export const menu = {
     },
   ],
 };
+
+

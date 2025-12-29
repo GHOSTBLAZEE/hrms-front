@@ -7,7 +7,8 @@ import PayrollEmployeeTable from "./components/PayrollEmployeeTable";
 import PayrollTotalsFooter from "./components/PayrollTotalsFooter";
 
 async function fetchPayrollRun(runId) {
-  const res = await apiClient.get(`/api/v1/payroll-runs/${runId}`);
+  const res = await apiClient.get(`/payroll-runs/${runId}`);
+
   return res.data;
 }
 
