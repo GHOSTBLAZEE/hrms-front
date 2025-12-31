@@ -10,7 +10,7 @@ export default function PayrollRunsPage() {
   const { data, isLoading } = useQuery({
     queryKey: ["latest-payroll-run"],
     queryFn: async () => {
-      const res = await apiClient.get("/reports/payroll-runs");
+      const res = await apiClient.get("/api/v1/reports/payroll-runs");
       return res.data;
     },
   });
