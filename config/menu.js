@@ -16,6 +16,7 @@ import {
 
 export const menu = {
   main: [
+    /* ================= DASHBOARD ================= */
     {
       title: "Dashboard",
       url: "/dashboard",
@@ -29,6 +30,18 @@ export const menu = {
       url: "/dashboard/employees",
       icon: Users,
       permissions: ["view employees"],
+    },
+
+    /* ================= APPROVALS (🔥 NEW) ================= */
+    {
+      title: "Approvals",
+      url: "/dashboard/approvals",
+      icon: ClipboardList,
+      // show if user can approve ANYTHING
+      permissions: [
+        "approve leave",
+        "approve attendance correction",
+      ],
     },
 
     /* ================= ATTENDANCE ================= */
@@ -63,11 +76,7 @@ export const menu = {
           url: "/dashboard/leaves/my",
           permissions: ["view leave"],
         },
-        {
-          title: "Leave Approvals",
-          url: "/dashboard/leaves/approvals",
-          permissions: ["approve leave"],
-        },
+        // ❌ REMOVE approvals from here
       ],
     },
 
@@ -172,5 +181,3 @@ export const menu = {
     },
   ],
 };
-
-

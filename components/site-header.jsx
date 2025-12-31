@@ -1,5 +1,6 @@
 "use client"
 
+import NotificationBell from "@/app/dashboard/notifications/components/NotificationBell"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
@@ -18,6 +19,8 @@ export function SiteHeader() {
           <Button variant="ghost" size="sm" className="hidden sm:flex">
             Help
           </Button>
+           {/* 🔔 Notifications */}
+          <NotificationBell />
         </div>
       </div>
     </header>

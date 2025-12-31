@@ -4,7 +4,6 @@ import { useQuery } from "@tanstack/react-query";
 import apiClient from "@/lib/apiClient";
 import AuditTimelineItem from "../[employeeId]/components/AuditTimelineItem";
 
-
 export default function AuditTab({ employee }) {
   const { data, isLoading } = useQuery({
     queryKey: ["employee-audit", employee.id],
@@ -16,18 +15,24 @@ export default function AuditTab({ employee }) {
     },
   });
 
-  if (isLoading) return <div>Loading audit logs…</div>;
+  if (isLoading) {
+    return (
+      <div className="text-sm text-muted-foreground">
+        Loading audit logs…
+      </div>
+    );
+  }
 
   if (!data?.length) {
     return (
-      <div className="text-sm text-muted-foreground">
-        No audit history available
+      <div className="rounded-md border border-dashed p-6 text-sm text-muted-foreground">
+        No audit history available for this employee.
       </div>
     );
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {data.map((log) => (
         <AuditTimelineItem key={log.id} log={log} />
       ))}

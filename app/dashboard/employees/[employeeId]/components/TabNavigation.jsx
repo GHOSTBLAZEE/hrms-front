@@ -1,17 +1,40 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { hasPermission } from "@/lib/permissions";
 
 export default function TabNavigation({ tabs, employee }) {
   const { permissions } = useAuth();
-  const [active, setActive] = useState(tabs[0].key);
-console.log(permissions);
 
-  const visibleTabs = tabs.filter((tab) =>
-    hasPermission(permissions, tab.permissions)
+  const visibleTabs = useMemo(
+    () =>
+      tabs.filter((tab) =>
+        hasPermission(permissions, tab.permissions)
+      ),
+    [tabs, permissions]
   );
+
+  const [active, setActive] = useState(
+    visibleTabs[0]?.key
+  );
+
+  // Ensure active tab is always valid
+  useEffect(() => {
+    if (
+      !visibleTabs.find((t) => t.key === active)
+    ) {
+      setActive(visibleTabs[0]?.key);
+    }
+  }, [visibleTabs, active]);
+
+  if (!visibleTabs.length) {
+    return (
+      <div className="rounded-md border p-6 text-sm text-muted-foreground">
+        You don’t have access to view any sections for this employee.
+      </div>
+    );
+  }
 
   const ActiveTab = visibleTabs.find(
     (t) => t.key === active
@@ -20,20 +43,31 @@ console.log(permissions);
   return (
     <div className="space-y-4">
       {/* Tabs */}
-      <div className="flex gap-4 border-b">
-        {visibleTabs.map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setActive(tab.key)}
-            className={`pb-2 text-sm ${
-              active === tab.key
-                ? "border-b-2 border-primary font-medium"
-                : "text-muted-foreground"
-            }`}
-          >
-            {tab.title}
-          </button>
-        ))}
+      <div className="flex gap-6 border-b">
+        {visibleTabs.map((tab) => {
+          const isActive = active === tab.key;
+
+          return (
+            <button
+              key={tab.key}
+              onClick={() => setActive(tab.key)}
+              className={`
+                relative pb-2 text-sm transition
+                ${
+                  isActive
+                    ? "font-medium text-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }
+              `}
+            >
+              {tab.title}
+
+              {isActive && (
+                <span className="absolute inset-x-0 -bottom-px h-0.5 bg-primary" />
+              )}
+            </button>
+          );
+        })}
       </div>
 
       {/* Content */}

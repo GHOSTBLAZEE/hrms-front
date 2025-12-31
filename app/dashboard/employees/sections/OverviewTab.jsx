@@ -3,35 +3,38 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import ProfileSummary from "../[employeeId]/components/ProfileSummary";
-import EditProfileForm from "../[employeeId]/components/EditProfileForm";
+import EditProfileDrawer from "../[employeeId]/components/EditProfileDrawer";
+import { Button } from "@/components/ui/button";
 
 export default function OverviewTab({ employee }) {
-  const { user, permissions = [], isLoading } = useAuth();
+  const { permissions = [] } = useAuth();
+  const canEdit = permissions.includes("update employees");
 
-  const canEdit =
-    permissions?.includes("update employees");
-
-  const [editing, setEditing] = useState(false);
+  const [open, setOpen] = useState(false);
 
   return (
     <div className="space-y-6">
+      {/* Summary */}
       <ProfileSummary employee={employee} />
 
-      {canEdit && !editing && (
-        <button
-          className="text-sm underline"
-          onClick={() => setEditing(true)}
-        >
-          Edit Profile
-        </button>
+      {/* Actions */}
+      {canEdit && (
+        <div className="flex justify-end">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setOpen(true)}
+          >
+            Edit Profile
+          </Button>
+        </div>
       )}
 
-      {editing && (
-        <EditProfileForm
-          employee={employee}
-          onClose={() => setEditing(false)}
-        />
-      )}
+      <EditProfileDrawer
+        open={open}
+        onClose={() => setOpen(false)}
+        employee={employee}
+      />
     </div>
   );
 }
