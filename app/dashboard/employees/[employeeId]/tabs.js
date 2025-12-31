@@ -1,4 +1,5 @@
 import AttendanceTab from "../sections/AttendanceTab";
+import AuditTab from "../sections/AuditTab";
 import DocumentsTab from "../sections/DocumentsTab";
 import LeavesTab from "../sections/LeavesTab";
 import OverviewTab from "../sections/OverviewTab";
@@ -35,5 +36,11 @@ export const tabs = [
     title: "Documents",
     component: DocumentsTab,
     permissions: ["view employee documents"],
+  },
+  {
+    key: "audit",
+    title: "Audit",
+    component: AuditTab,
+    permissions: ["update employees"],
   },
 ];

@@ -15,7 +15,6 @@ export default function Page() {
     },
   });
   
-  console.log(data);
   if (isLoading) return <div className="p-6">Loading employees…</div>;
   
   return (

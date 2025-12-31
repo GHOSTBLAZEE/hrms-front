@@ -7,6 +7,7 @@ import { hasPermission } from "@/lib/permissions";
 export default function TabNavigation({ tabs, employee }) {
   const { permissions } = useAuth();
   const [active, setActive] = useState(tabs[0].key);
+console.log(permissions);
 
   const visibleTabs = tabs.filter((tab) =>
     hasPermission(permissions, tab.permissions)

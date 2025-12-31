@@ -17,7 +17,7 @@ export default function EditProfileForm({ employee, onClose }) {
 
   const mutation = useMutation({
     mutationFn: () =>
-      apiClient.put(`api/v1/employees/${employee.id}`, form),
+      apiClient.put(`/api/v1/employees/${employee.id}`, form),
     onSuccess: () => {
       toast.success("Profile updated");
       qc.invalidateQueries(["employee", employee.id]);
