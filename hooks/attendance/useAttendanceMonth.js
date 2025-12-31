@@ -10,8 +10,9 @@ export function useAttendanceMonth(date) {
     queryFn: async () => {
       const res = await getAttendanceMonthApi(month);
 
-      // 🔑 IMPORTANT: unwrap Laravel resource response
+      // Unwrap Laravel API resource safely
       return Array.isArray(res) ? res : res.data;
     },
+    staleTime: Infinity, // attendance is payroll-safe & immutable post-lock
   });
 }

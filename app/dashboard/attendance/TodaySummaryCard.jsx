@@ -1,46 +1,78 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
-export default function TodaySummaryCard({
+export default function TodayPunchCard({
   attendance,
   onPunch,
   loading,
 }) {
-  const logs = attendance?.logs ?? [];
-  const lastLog = logs[logs.length - 1];
+  const punches = attendance?.logs ?? [];
+  const lastPunch = punches[punches.length - 1];
+
+  // Determine next raw action (UI hint only)
   const nextAction =
-    !lastLog || lastLog.type === "OUT" ? "IN" : "OUT";
+    !lastPunch || lastPunch.type === "OUT"
+      ? "IN"
+      : "OUT";
+
+  const isLocked = attendance?.is_locked;
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Today</CardTitle>
+
+        {isLocked && (
+          <Badge variant="destructive">Locked</Badge>
+        )}
       </CardHeader>
 
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-4">
+        {/* Derived status (read-only) */}
         <div className="text-sm">
           Status:{" "}
-          <strong>{attendance?.status ?? "Not marked"}</strong>
+          <strong>
+            {attendance?.status ?? "Not marked"}
+          </strong>
         </div>
 
+        {/* Punch action */}
         <Button
-          onClick={onPunch}
-          disabled={loading}
           className="w-full"
+          disabled={loading || isLocked}
+          onClick={() => onPunch(nextAction)}
         >
           {loading
-            ? "Processing..."
+            ? "Processing…"
             : nextAction === "IN"
-            ? "Check In"
-            : "Check Out"}
+            ? "Punch In"
+            : "Punch Out"}
         </Button>
 
-        {lastLog && (
+        {/* Last punch info */}
+        {lastPunch && (
           <p className="text-xs text-muted-foreground">
-            Last punch: {lastLog.type} at{" "}
-            {new Date(lastLog.punch_time).toLocaleTimeString()}
+            Last punch:{" "}
+            <strong>{lastPunch.type}</strong> at{" "}
+            {new Date(
+              lastPunch.punch_time
+            ).toLocaleTimeString()}
+          </p>
+        )}
+
+        {/* Missed punch hint (UI only) */}
+        {attendance?.status === "missed_punch" && (
+          <p className="text-xs text-amber-600">
+            ⚠ Missed punch detected. Please request a
+            correction if required.
           </p>
         )}
       </CardContent>

@@ -13,11 +13,14 @@ import RejectApprovalDialog from "./components/RejectApprovalDialog";
 import { useApprovals } from "./hooks/useApprovals";
 import { useApprovalActions } from "./hooks/useApprovalActions";
 
-export default function ApprovalsPage() {
+export default function ApprovalsPage({
+  defaultType,
+  hideTabs = false,
+}) {
   const { permissions = [] } = useAuth();
 
   const [status, setStatus] = useState("pending");
-  const [type, setType] = useState("all");
+  const [type, setType] = useState(defaultType ?? "all");
   const [selected, setSelected] = useState([]);
   const [openBulkReject, setOpenBulkReject] = useState(false);
 
@@ -92,16 +95,21 @@ export default function ApprovalsPage() {
       <ApprovalsHeader />
 
       <div className="flex items-center justify-between">
-        <ApprovalTabs
-          value={status}
-          onChange={setStatus}
-          counts={counts}
-        />
+        {!hideTabs && (
+          <ApprovalTabs
+            value={status}
+            onChange={setStatus}
+            counts={counts}
+          />
+        )}
 
-        <ApprovalFilters
-          value={type}
-          onChange={setType}
-        />
+        {!defaultType && (
+          <ApprovalFilters
+            value={type}
+            onChange={setType}
+          />
+        )}
+
       </div>
 
       {/* 🔥 Bulk action bar */}

@@ -12,11 +12,14 @@ import {
   FileBarChart2,
   Wallet,
   ShieldCheck,
+  Lock,
+  UserCheck,
 } from "lucide-react";
 
 export const menu = {
+  /* ================= MAIN ================= */
   main: [
-    /* ================= DASHBOARD ================= */
+    /* ---------- Dashboard ---------- */
     {
       title: "Dashboard",
       url: "/dashboard",
@@ -24,7 +27,7 @@ export const menu = {
       permissions: [],
     },
 
-    /* ================= EMPLOYEES ================= */
+    /* ---------- Employees ---------- */
     {
       title: "Employees",
       url: "/dashboard/employees",
@@ -32,19 +35,19 @@ export const menu = {
       permissions: ["view employees"],
     },
 
-    /* ================= APPROVALS (🔥 NEW) ================= */
+    /* ---------- Approvals (CENTRAL) ---------- */
     {
       title: "Approvals",
       url: "/dashboard/approvals",
       icon: ClipboardList,
-      // show if user can approve ANYTHING
       permissions: [
         "approve leave",
         "approve attendance correction",
+        "approve overtime",
       ],
     },
 
-    /* ================= ATTENDANCE ================= */
+    /* ---------- Attendance ---------- */
     {
       title: "Attendance",
       url: "/dashboard/attendance",
@@ -53,7 +56,8 @@ export const menu = {
       subMenu: [
         {
           title: "My Attendance",
-          url: "/dashboard/attendance/my",
+          url: "/dashboard/attendance",
+          icon: UserCheck,
           permissions: ["view attendance"],
         },
         {
@@ -61,10 +65,26 @@ export const menu = {
           url: "/dashboard/attendance/team",
           permissions: ["view team attendance"],
         },
+        {
+          title: "Corrections",
+          url: "/dashboard/attendance/corrections",
+          permissions: ["view attendance corrections"],
+        },
+        {
+          title: "Approvals",
+          url: "/dashboard/attendance/approvals",
+          permissions: ["approve attendance correction"],
+        },
+        {
+          title: "Locks",
+          url: "/dashboard/attendance/locks",
+          icon: Lock,
+          permissions: ["lock attendance"],
+        },
       ],
     },
 
-    /* ================= LEAVES ================= */
+    /* ---------- Leaves ---------- */
     {
       title: "Leaves",
       url: "/dashboard/leaves",
@@ -73,14 +93,13 @@ export const menu = {
       subMenu: [
         {
           title: "My Leaves",
-          url: "/dashboard/leaves/my",
+          url: "/dashboard/leaves",
           permissions: ["view leave"],
         },
-        // ❌ REMOVE approvals from here
       ],
     },
 
-    /* ================= PAYROLL ================= */
+    /* ---------- Payroll ---------- */
     {
       title: "Payroll",
       url: "/dashboard/payroll",
@@ -105,7 +124,7 @@ export const menu = {
       ],
     },
 
-    /* ================= REPORTS ================= */
+    /* ---------- Reports ---------- */
     {
       title: "Reports",
       url: "/dashboard/reports",
