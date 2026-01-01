@@ -143,6 +143,12 @@ export const menu = {
           permissions: ["view attendance reports"],
         },
         {
+          title: "Attendance Integrity",
+          url: "/dashboard/reports/attendance-integrity",
+          permissions: ["view audit logs"],
+        },
+
+        {
           title: "Leave Reports",
           url: "/dashboard/reports/leaves",
           permissions: ["view leave reports"],

@@ -40,6 +40,15 @@ export default function AttendanceMonthlyReportPage() {
         data={data?.data ?? []}
         loading={isLoading}
       />
+      <Button
+        onClick={() => {
+          window.location.href =
+            `/api/v1/attendance/evidence/export?employee_id=${id}&from=2026-01-01&to=2026-01-31`;
+        }}
+      >
+        Export Attendance Evidence
+      </Button>
+
     </div>
   );
 }
