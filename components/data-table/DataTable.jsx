@@ -30,11 +30,14 @@ import {
 export function DataTable({
   columns,
   data = [],
-  globalFilterKeys = [], // ["name", "code", "status"]
+  onRowClick,
+  selectable = false,
+  selected = [],
+  onSelect,
+  globalFilterKeys = [],
 }) {
   const [sorting, setSorting] = React.useState([]);
   const [columnVisibility, setColumnVisibility] = React.useState({});
-  const [rowSelection, setRowSelection] = React.useState({});
   const [globalFilter, setGlobalFilter] = React.useState("");
 
   const table = useReactTable({
@@ -43,12 +46,10 @@ export function DataTable({
     state: {
       sorting,
       columnVisibility,
-      rowSelection,
       globalFilter,
     },
     onSortingChange: setSorting,
     onColumnVisibilityChange: setColumnVisibility,
-    onRowSelectionChange: setRowSelection,
     onGlobalFilterChange: setGlobalFilter,
 
     getCoreRowModel: getCoreRowModel(),
@@ -56,7 +57,6 @@ export function DataTable({
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
 
-    // 🔍 GLOBAL FILTER LOGIC
     globalFilterFn: (row, _, value) => {
       if (!value) return true;
 
@@ -71,7 +71,7 @@ export function DataTable({
 
   return (
     <div className="space-y-4">
-      {/* 🔍 Global Search + Column Toggle */}
+      {/* 🔍 Search + Column toggle */}
       <div className="flex items-center gap-2">
         {globalFilterKeys.length > 0 && (
           <Input
@@ -112,6 +112,7 @@ export function DataTable({
           <TableHeader>
             {table.getHeaderGroups().map((hg) => (
               <TableRow key={hg.id}>
+                {selectable && <TableHead className="w-8" />}
                 {hg.headers.map((header) => (
                   <TableHead key={header.id}>
                     {header.isPlaceholder
@@ -128,25 +129,51 @@ export function DataTable({
 
           <TableBody>
             {table.getRowModel().rows.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
+              table.getRowModel().rows.map((row) => {
+                const isChecked = selected.includes(row.original.id);
+
+                return (
+                  <TableRow
+                    key={row.id}
+                    className={[
+                      onRowClick && "cursor-pointer hover:bg-muted",
+                      selectable && "select-none",
+                    ]
+                      .filter(Boolean)
+                      .join(" ")}
+                    onClick={() => onRowClick?.(row.original)}
+                  >
+                    {selectable && (
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() =>
+                            onSelect?.(
+                              isChecked
+                                ? selected.filter((id) => id !== row.original.id)
+                                : [...selected, row.original.id]
+                            )
+                          }
+                        />
+                      </TableCell>
+                    )}
+
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id}>
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                );
+              })
             ) : (
               <TableRow>
                 <TableCell
-                  colSpan={columns.length}
+                  colSpan={columns.length + (selectable ? 1 : 0)}
                   className="h-24 text-center"
                 >
                   No results.
@@ -160,8 +187,7 @@ export function DataTable({
       {/* ⏭ Pagination */}
       <div className="flex items-center justify-between text-sm">
         <div className="text-muted-foreground">
-          {table.getFilteredSelectedRowModel().rows.length} of{" "}
-          {table.getFilteredRowModel().rows.length} selected
+          {selected.length} of {table.getFilteredRowModel().rows.length} selected
         </div>
 
         <div className="space-x-2">

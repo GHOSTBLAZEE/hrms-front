@@ -5,6 +5,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import apiClient from "@/lib/apiClient";
 import TodayPunchCard from "./TodaySummaryCard";
 import PunchTimeline from "./PunchTimeline";
+import RequestCorrectionDialog from "./RequestCorrectionDialog";
+import ShiftHintBar from "./ShiftHintBar";
 
 export default function AttendancePage() {
   const qc = useQueryClient();
@@ -22,6 +24,16 @@ export default function AttendancePage() {
       return res.data;
     },
   });
+
+  const user = qc.getQueryData(["me"]);
+
+  const canRequestCorrection =
+  !attendance?.is_locked &&
+  !attendance?.has_pending_correction &&
+  user?.permissions?.includes("request attendance correction");
+
+
+
 
   /* ---------------------------
    | Punch mutation (RAW event)
@@ -41,6 +53,19 @@ export default function AttendancePage() {
     },
   });
 
+  const correctionMutation = useMutation({
+    mutationFn: async (payload) => {
+      return apiClient.post(
+        "/api/v1/attendance-corrections",
+        payload
+      );
+    },
+    onSuccess: () => {
+      qc.invalidateQueries(["attendance-today"]);
+      setOpenCorrection(false);
+    },
+  });
+
   const handlePunch = (type) => {
     setPunching(true);
     punchMutation.mutate(type);
@@ -57,12 +82,17 @@ export default function AttendancePage() {
         onPunch={handlePunch}
         loading={punching}
         onRequestCorrection={() => setOpenCorrection(true)}
+        canRequestCorrection={canRequestCorrection}
       />
+
 
       <RequestCorrectionDialog
         open={openCorrection}
         onClose={() => setOpenCorrection(false)}
         attendance={attendance}
+        onSubmit={(payload) =>
+          correctionMutation.mutate(payload)
+        }
       />
 
       <ShiftHintBar

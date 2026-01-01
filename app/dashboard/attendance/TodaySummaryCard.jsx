@@ -13,11 +13,12 @@ export default function TodayPunchCard({
   attendance,
   onPunch,
   loading,
+  onRequestCorrection,
+  canRequestCorrection,
 }) {
   const punches = attendance?.logs ?? [];
   const lastPunch = punches[punches.length - 1];
 
-  // Determine next raw action (UI hint only)
   const nextAction =
     !lastPunch || lastPunch.type === "OUT"
       ? "IN"
@@ -29,22 +30,16 @@ export default function TodayPunchCard({
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Today</CardTitle>
-
         {isLocked && (
           <Badge variant="destructive">Locked</Badge>
         )}
       </CardHeader>
 
-      <CardContent className="space-y-4">
-        {/* Derived status (read-only) */}
+      <CardContent className="space-y-3">
         <div className="text-sm">
-          Status:{" "}
-          <strong>
-            {attendance?.status ?? "Not marked"}
-          </strong>
+          Status: <strong>{attendance?.status ?? "Not marked"}</strong>
         </div>
 
-        {/* Punch action */}
         <Button
           className="w-full"
           disabled={loading || isLocked}
@@ -57,25 +52,31 @@ export default function TodayPunchCard({
             : "Punch Out"}
         </Button>
 
-        {/* Last punch info */}
-        {lastPunch && (
-          <p className="text-xs text-muted-foreground">
-            Last punch:{" "}
-            <strong>{lastPunch.type}</strong> at{" "}
-            {new Date(
-              lastPunch.punch_time
-            ).toLocaleTimeString()}
-          </p>
+        {canRequestCorrection && !isLocked && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full"
+            onClick={onRequestCorrection}
+          >
+            Request Correction
+          </Button>
+        )}
+        {attendance?.has_pending_correction && (
+          <Badge variant="secondary">
+            Correction Pending Approval
+          </Badge>
         )}
 
-        {/* Missed punch hint (UI only) */}
-        {attendance?.status === "missed_punch" && (
-          <p className="text-xs text-amber-600">
-            ⚠ Missed punch detected. Please request a
-            correction if required.
+
+        {lastPunch && (
+          <p className="text-xs text-muted-foreground">
+            Last punch: <strong>{lastPunch.type}</strong> at{" "}
+            {new Date(lastPunch.punch_time).toLocaleTimeString()}
           </p>
         )}
       </CardContent>
     </Card>
   );
 }
+

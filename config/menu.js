@@ -42,7 +42,6 @@ export const menu = {
       icon: ClipboardList,
       permissions: [
         "approve leave",
-        "approve attendance correction",
         "approve overtime",
       ],
     },
@@ -57,7 +56,6 @@ export const menu = {
         {
           title: "My Attendance",
           url: "/dashboard/attendance",
-          icon: UserCheck,
           permissions: ["view attendance"],
         },
         {
@@ -68,17 +66,14 @@ export const menu = {
         {
           title: "Corrections",
           url: "/dashboard/attendance/corrections",
-          permissions: ["view attendance corrections"],
-        },
-        {
-          title: "Approvals",
-          url: "/dashboard/attendance/approvals",
-          permissions: ["approve attendance correction"],
+          permissions: [
+            "view attendance corrections",
+            "approve attendance correction", // managers see same page
+          ],
         },
         {
           title: "Locks",
           url: "/dashboard/attendance/locks",
-          icon: Lock,
           permissions: ["lock attendance"],
         },
       ],

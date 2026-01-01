@@ -6,7 +6,9 @@ import { useAuth } from "@/hooks/useAuth";
 import ApprovalsHeader from "./components/ApprovalsHeader";
 import ApprovalTabs from "./components/ApprovalTabs";
 import ApprovalFilters from "./components/ApprovalFilters";
-import ApprovalTable from "./components/ApprovalTable";
+import { DataTable } from "@/components/data-table/DataTable";
+import { approvalColumns } from "./columns";
+import EmptyApprovals from "./components/EmptyApprovals";
 import BulkApprovalBar from "./components/BulkApprovalBar";
 import RejectApprovalDialog from "./components/RejectApprovalDialog";
 
@@ -120,12 +122,23 @@ export default function ApprovalsPage({
         disabled={isActionLoading}
       />
 
-      <ApprovalTable
-        data={data}
-        isLoading={isLoading}
-        selected={selected}
-        onSelect={setSelected}
-      />
+      {isLoading ? (
+        <div className="text-sm text-muted-foreground">
+          Loading approvals…
+        </div>
+      ) : data.length === 0 ? (
+        <EmptyApprovals />
+      ) : (
+        <DataTable
+          columns={approvalColumns}
+          data={data}
+          selectable
+          selected={selected}
+          onSelect={setSelected}
+          globalFilterKeys={["status", "type"]}
+        />
+      )}
+
 
       {/* 🔥 Bulk reject modal */}
       <RejectApprovalDialog

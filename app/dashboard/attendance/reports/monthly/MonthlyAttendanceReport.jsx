@@ -12,6 +12,7 @@ import DayDetailModal from "./components/DayDetailModal";
 import EmptyState from "./components/EmptyState";
 import { useAuth } from "@/hooks/useAuth";
 import { PERMISSIONS } from "./constants";
+import { useAttendanceLock } from "@/hooks/attendance/useAttendanceLock";
 
 export default function MonthlyAttendanceReport() {
   const [month, setMonth] = useState(startOfMonth(new Date()));

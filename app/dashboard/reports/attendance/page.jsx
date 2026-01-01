@@ -6,6 +6,7 @@ import { hasPermission } from "@/lib/permissions";
 import { useAttendanceMonthlyReport } from "@/hooks/reports/useAttendanceMonthlyReport";
 import AttendanceReportHeader from "./components/AttendanceReportHeader";
 import AttendanceReportTable from "./components/AttendanceReportTable";
+import { Button } from "@/components/ui/button";
 
 export default function AttendanceMonthlyReportPage() {
   const { permissions } = useAuth();
