@@ -25,6 +25,7 @@ export default function AttendanceMonthlyReportPage() {
   if (!canView) {
     return <div className="p-6 text-sm">Unauthorized</div>;
   }
+console.log(data);
 
   return (
     <div className="p-6 space-y-4">
