@@ -7,6 +7,7 @@ import TodayPunchCard from "./TodaySummaryCard";
 import PunchTimeline from "./PunchTimeline";
 import RequestCorrectionDialog from "./RequestCorrectionDialog";
 import ShiftHintBar from "./ShiftHintBar";
+import { toast } from "sonner";
 
 export default function AttendancePage() {
   const qc = useQueryClient();
@@ -54,17 +55,20 @@ export default function AttendancePage() {
   });
 
   const correctionMutation = useMutation({
-    mutationFn: async (payload) => {
-      return apiClient.post(
-        "/api/v1/attendance-corrections",
-        payload
-      );
-    },
+    mutationFn: async (payload) =>
+      apiClient.post("/api/v1/attendance-corrections", payload),
+
     onSuccess: () => {
       qc.invalidateQueries(["attendance-today"]);
       setOpenCorrection(false);
+      toast.success("Correction request submitted");
+    },
+
+    onError: () => {
+      toast.error("Failed to submit correction request");
     },
   });
+
 
   const handlePunch = (type) => {
     setPunching(true);
@@ -88,12 +92,13 @@ export default function AttendancePage() {
 
       <RequestCorrectionDialog
         open={openCorrection}
-        onClose={() => setOpenCorrection(false)}
+        onClose={setOpenCorrection}
         attendance={attendance}
         onSubmit={(payload) =>
           correctionMutation.mutate(payload)
         }
       />
+
 
       <ShiftHintBar
         shift={attendance?.shift}

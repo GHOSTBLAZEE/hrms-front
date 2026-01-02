@@ -12,7 +12,7 @@ export function useApprovalActions() {
 
       if (type === "attendance") {
         return apiClient.post(
-          `/api/v1/attendance/corrections/${id}/approve`
+          `/api/v1/attendance-corrections/${id}/approve`
         );
       }
 

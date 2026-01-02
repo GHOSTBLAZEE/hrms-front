@@ -1,31 +1,65 @@
 "use client";
 
 import { useState } from "react";
+import {
+  startOfMonth,
+  endOfMonth,
+  format,
+} from "date-fns";
+
 import { useAuth } from "@/hooks/useAuth";
 import { hasPermission } from "@/lib/permissions";
 import { useAttendanceMonthlyReport } from "@/hooks/reports/useAttendanceMonthlyReport";
+
 import AttendanceReportHeader from "./components/AttendanceReportHeader";
 import AttendanceReportTable from "./components/AttendanceReportTable";
 import { Button } from "@/components/ui/button";
 
 export default function AttendanceMonthlyReportPage() {
-  const { permissions } = useAuth();
+  const { user, permissions } = useAuth();
 
-  const now = new Date();
-  const [year, setYear] = useState(now.getFullYear());
-  const [month, setMonth] = useState(now.getMonth() + 1);
+  const today = new Date();
+  const [year, setYear] = useState(today.getFullYear());
+  const [month, setMonth] = useState(today.getMonth() + 1);
 
+  /* ---------------- Permissions ---------------- */
   const canView = hasPermission(permissions, ["view attendance reports"]);
-  const canExport = hasPermission(permissions, ["export attendance reports"]);
-
-  const { data, isLoading } = useAttendanceMonthlyReport(
-    canView ? { year, month } : {}
-  );
+  const canExport = hasPermission(permissions, ["view attendance reports"]);
+console.log(canView,canExport);
 
   if (!canView) {
-    return <div className="p-6 text-sm">Unauthorized</div>;
+    return (
+      <div className="p-6 text-sm text-muted-foreground">
+        You are not authorized to view attendance reports.
+      </div>
+    );
   }
-console.log(data);
+
+  /* ---------------- Data ---------------- */
+  const { data, isLoading } = useAttendanceMonthlyReport({
+    year,
+    month,
+  });
+
+  /* ---------------- Export ---------------- */
+  const handleExport = () => {
+    if (!user?.employee?.id) return;
+
+    const from = format(
+      startOfMonth(new Date(year, month - 1)),
+      "yyyy-MM-dd"
+    );
+    const to = format(
+      endOfMonth(new Date(year, month - 1)),
+      "yyyy-MM-dd"
+    );
+
+    window.location.href =
+      `/api/v1/attendance/evidence/export` +
+      `?employee_id=${user.employee.id}` +
+      `&from=${from}` +
+      `&to=${to}`;
+  };
 
   return (
     <div className="p-6 space-y-4">
@@ -42,15 +76,12 @@ console.log(data);
         data={data?.data ?? []}
         loading={isLoading}
       />
-      <Button
-        onClick={() => {
-          window.location.href =
-            `/api/v1/attendance/evidence/export?employee_id=${id}&from=2026-01-01&to=2026-01-31`;
-        }}
-      >
-        Export Attendance Evidence
-      </Button>
 
+      {canExport && (
+        <Button onClick={handleExport}>
+          Export Attendance Evidence
+        </Button>
+      )}
     </div>
   );
 }

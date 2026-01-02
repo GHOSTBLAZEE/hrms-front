@@ -47,6 +47,7 @@ export default function ApprovalsPage({
     status,
     type,
   });
+console.log(data);
 
   const pending = useApprovals({ status: "pending", type });
   const approved = useApprovals({ status: "approved", type });

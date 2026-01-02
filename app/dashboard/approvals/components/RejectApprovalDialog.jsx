@@ -19,11 +19,15 @@ export default function RejectApprovalDialog({
 }) {
   const [reason, setReason] = useState("");
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (!reason.trim()) return;
-    onConfirm(reason);
+
+    await onConfirm(reason);
+
     setReason("");
+    onClose(false);   // <-- CLOSE THE DIALOG
   };
+
 
   return (
     <Dialog open={open} onOpenChange={onClose}>

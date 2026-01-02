@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import apiClient from "@/lib/apiClient";
+import { toast } from "sonner";
 
 export default function ApprovalActions({ correction, onDone }) {
   const qc = useQueryClient();

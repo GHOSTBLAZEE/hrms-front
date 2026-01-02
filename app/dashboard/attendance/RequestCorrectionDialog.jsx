@@ -27,18 +27,25 @@ export default function RequestCorrectionDialog({
   const isValid =
     (checkIn || checkOut) && reason.trim().length >= 5;
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
 
     if (!isValid) return;
 
-    onSubmit({
+    await onSubmit({
       attendance_id: attendance.id,
       requested_check_in: checkIn || null,
       requested_check_out: checkOut || null,
       reason: reason.trim(),
     });
+
+    setCheckIn("");
+    setCheckOut("");
+    setReason("");
+
+    onClose(false);   // <-- CLOSE
   }
+
 
   return (
     <Dialog open={open} onOpenChange={onClose}>

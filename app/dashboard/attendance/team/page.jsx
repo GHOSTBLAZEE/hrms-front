@@ -9,7 +9,7 @@ export default function TeamAttendancePage() {
     queryKey: ["team-attendance-today"],
     queryFn: async () => {
       const res = await apiClient.get(
-        "/attendance/team/today"
+        "/api/v1/attendance/team/today"
       );
       return res.data;
     },
