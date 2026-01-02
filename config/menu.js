@@ -64,20 +64,26 @@ export const menu = {
           permissions: ["view team attendance"],
         },
         {
+          title: "Monthly Attendance",
+          url: "/dashboard/attendance/reports/monthly",
+          permissions: ["view attendance reports"],
+        },
+        {
           title: "Corrections",
           url: "/dashboard/attendance/corrections",
           permissions: [
             "view attendance corrections",
-            "approve attendance correction", // managers see same page
+            "approve attendance correction",
           ],
         },
         {
-          title: "Locks",
+          title: "Attendance Lock",
           url: "/dashboard/attendance/locks",
           permissions: ["lock attendance"],
         },
       ],
     },
+
 
     /* ---------- Leaves ---------- */
     {

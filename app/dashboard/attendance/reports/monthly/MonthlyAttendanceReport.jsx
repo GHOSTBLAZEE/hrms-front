@@ -4,32 +4,43 @@ import { useState } from "react";
 import { startOfMonth } from "date-fns";
 
 import { useAttendanceMonth } from "@/hooks/attendance/useAttendanceMonth";
+import { useAttendanceLock } from "@/hooks/attendance/useAttendanceLock";
+import { useAuth } from "@/hooks/useAuth";
+import { hasPermission } from "@/lib/permissions";
+
 import ReportHeader from "./components/ReportHeader";
-import MonthlyCalendar from "./components/MonthlyCalendar";
 import MonthlySummaryBar from "./components/MonthlySummaryBar";
 import MonthlyAttendanceTable from "./components/MonthlyAttendanceTable";
-import DayDetailModal from "./components/DayDetailModal";
 import EmptyState from "./components/EmptyState";
-import { useAuth } from "@/hooks/useAuth";
+
 import { PERMISSIONS } from "./constants";
-import { useAttendanceLock } from "@/hooks/attendance/useAttendanceLock";
 
 export default function MonthlyAttendanceReport() {
   const [month, setMonth] = useState(startOfMonth(new Date()));
-  const [selected, setSelected] = useState(null);
 
-  const { data = [], isLoading } = useAttendanceMonth(month);
+  const { permissions = [] } = useAuth();
+
+  const year = month.getFullYear();
+  const monthNumber = month.getMonth() + 1;
+
+  const { data, isLoading, isError } = useAttendanceMonth({
+    year,
+    month: monthNumber,
+  });
+
   const { data: lockInfo } = useAttendanceLock(month);
-  const { hasPermission } = useAuth();
 
-  const canView = hasPermission(PERMISSIONS.VIEW_ATTENDANCE_REPORT);
-  const canExport = hasPermission(PERMISSIONS.EXPORT_ATTENDANCE_REPORT);
-  const canChangeMonth = canExport; // HR/Admin only
-  const isLocked = lockInfo?.locked === true;
-  const lockReason = lockInfo?.reason;
-  if (!isLoading && data.length === 0) {
-    return <EmptyState />;
-  }
+  const canView = hasPermission(
+    permissions,
+    PERMISSIONS.VIEW_ATTENDANCE_REPORT
+  );
+
+  const canExport = hasPermission(
+    permissions,
+    PERMISSIONS.EXPORT_ATTENDANCE_REPORT
+  );
+
+  // --- PERMISSION GUARD ---
   if (!canView) {
     return (
       <div className="p-10 text-center text-red-500">
@@ -38,34 +49,45 @@ export default function MonthlyAttendanceReport() {
     );
   }
 
+  // --- LOADING STATE ---
+  if (isLoading) {
+    return <div className="p-10 text-center">Loading attendance…</div>;
+  }
+
+  // --- ERROR STATE ---
+  if (isError) {
+    return (
+      <div className="p-10 text-center text-red-500">
+        Failed to load attendance data.
+      </div>
+    );
+  }
+
+  // --- NO DATA STATE ---
+  if (!data?.data?.length) {
+    return <EmptyState />;
+  }
+
+  // --- DATA ---
+  const rows = data.data;
+  const meta = data.meta;
+console.log(data);
+
   return (
     <div className="space-y-6 p-6">
       <ReportHeader
         month={month}
         onMonthChange={setMonth}
-        attendance={data}
-        locked={isLocked}
-        lockReason={lockReason}
+        attendance={rows}
+        locked={meta.locked}
+        lockReason={meta.locked_at}
         canExport={canExport}
-        canChangeMonth={canChangeMonth}
+        canChangeMonth={canExport}
       />
 
-      <MonthlySummaryBar attendance={data} />
+      <MonthlySummaryBar attendance={rows} />
 
-      <MonthlyCalendar
-        month={month}
-        attendance={data}
-        onDayClick={setSelected}
-      />
-
-      <MonthlyAttendanceTable attendance={data} />
-
-      <DayDetailModal
-        open={!!selected}
-        onOpenChange={() => setSelected(null)}
-        day={selected?.day}
-        attendance={selected?.attendance}
-      />
+      <MonthlyAttendanceTable attendance={rows} />
     </div>
   );
 }

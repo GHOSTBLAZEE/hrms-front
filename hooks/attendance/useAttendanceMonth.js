@@ -1,18 +1,32 @@
 import { useQuery } from "@tanstack/react-query";
-import { format } from "date-fns";
-import { getAttendanceMonthApi } from "@/lib/attendanceApi";
+import apiClient from "@/lib/apiClient";
 
-export function useAttendanceMonth(date) {
-  const month = format(date, "yyyy-MM");
-
+/**
+ * Payroll-safe monthly attendance
+ * Source of truth: /reports/attendance/monthly
+ */
+export function useAttendanceMonth({ year, month, enabled = true }) {
   return useQuery({
-    queryKey: ["attendance-month", month],
+    queryKey: ["attendance-report-monthly", year, month],
     queryFn: async () => {
-      const res = await getAttendanceMonthApi(month);
+      const { data } = await apiClient.get(
+        "/api/v1/reports/attendance/monthly",
+        {
+          params: { year, month },
+        }
+      );
 
-      // Unwrap Laravel API resource safely
-      return Array.isArray(res) ? res : res.data;
+      /**
+       * Expected backend shape:
+       * {
+       *   data: Attendance[],
+       *   meta: { locked, totals, etc }
+       * }
+       */
+      return data;
     },
-    staleTime: Infinity, // attendance is payroll-safe & immutable post-lock
+    enabled: Boolean(year && month && enabled),
+    staleTime: Infinity,   // immutable after lock
+    cacheTime: Infinity,
   });
 }
