@@ -43,6 +43,25 @@ function normalizeAttendance(correction) {
   };
 }
 
+function normalizeAttendanceUnlock(request) {
+  return {
+    id: request.id,
+    type: "attendance_unlock",
+    title: "Attendance Unlock Request",
+    employee: {
+      id: request.requested_by,
+      name: request.requested_by_user?.name,
+      employee_code: request.requested_by_employee?.employee_code,
+    },
+    submitted_at: request.created_at,
+    status: request.status,
+    action_url: `/dashboard/attendance/locks`,
+    audit_url: `/dashboard/reports/audit_logs?entity=attendance_unlock&entity_id=${request.id}`,
+    meta: request,
+  };
+}
+
+
 export function useApprovals({ status = "pending", type = "all" }) {
   return useQuery({
     queryKey: ["approvals", status, type],
@@ -70,6 +89,17 @@ export function useApprovals({ status = "pending", type = "all" }) {
 
         attRes.data.forEach((correction) => {
           requests.push(normalizeAttendance(correction));
+        });
+      }
+      // Fetch attendance unlock approvals
+      if (type === "all" || type === "attendance_unlock") {
+        const unlockRes = await apiClient.get(
+          "/api/v1/attendance-unlock-requests",
+          { params: { status } }
+        );
+
+        unlockRes.data.forEach((req) => {
+          requests.push(normalizeAttendanceUnlock(req));
         });
       }
 

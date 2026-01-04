@@ -28,7 +28,9 @@ export default function ApprovalsPage({
 
   const canApprove =
     permissions.includes("approve leave") ||
-    permissions.includes("approve attendance correction");
+    permissions.includes("approve attendance correction") ||
+    permissions.includes("approve unlock attendance");
+
 
   if (!canApprove) {
     return (
