@@ -10,16 +10,19 @@ export default function NotificationsPage() {
     markAllAsRead,
     markAsRead,
   } = useNotifications();
-console.log(data);
 
   const notifications = data?.items ?? [];
-  const unreadCount = notifications.filter((n) => !n.read_at).length;
+  const unreadCount = notifications.filter(
+    (n) => !n.read_at
+  ).length;
 
-  if (isLoading) return <div>Loading notifications…</div>;
+  if (isLoading) {
+    return <div>Loading notifications…</div>;
+  }
 
   return (
     <div className="p-6 space-y-4">
-      <div className="flex justify-between">
+      <div className="flex justify-between items-center">
         <h1 className="text-xl font-semibold">Notifications</h1>
 
         {unreadCount > 0 && (
@@ -34,7 +37,7 @@ console.log(data);
 
       <NotificationList
         notifications={notifications}
-        onRead={markAsRead.mutate}
+        onRead={(id) => markAsRead.mutate(id)}
       />
     </div>
   );

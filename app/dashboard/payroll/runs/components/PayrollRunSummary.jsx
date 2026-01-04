@@ -2,6 +2,8 @@ import PayrollStatusBadge from "../components/PayrollStatusBadge";
 import { format } from "date-fns";
 
 export default function PayrollRunSummary({ run }) {
+  if (!run) return null;
+
   const runMonth = format(
     new Date(run.year, run.month - 1),
     "MMMM yyyy"
@@ -20,7 +22,7 @@ export default function PayrollRunSummary({ run }) {
         </h2>
 
         <div className="text-sm text-muted-foreground">
-          Attendance locked • Salary structure snapshotted
+          Attendance locked • Salary snapshotted
         </div>
 
         {run.status === "finalized" && (
@@ -38,9 +40,9 @@ export default function PayrollRunSummary({ run }) {
           Run at: {runAt}
         </div>
 
-        {run.run_by && (
+        {run.run_by?.name && (
           <div className="text-xs text-muted-foreground">
-            Run by: {run.run_by?.name ?? "—"}
+            Run by: {run.run_by.name}
           </div>
         )}
       </div>

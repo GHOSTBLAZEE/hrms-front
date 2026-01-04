@@ -1,12 +1,16 @@
 "use client";
 
+import { useWatch } from "react-hook-form";
+
 export default function SalaryBreakdownPreview({
-  components,
+  basic = 0,
+  hra = 0,
+  allowances = 0,
 }) {
-  const total = components.reduce(
-    (sum, c) => sum + (c.monthly_amount ?? 0),
-    0
-  );
+  const gross =
+    Number(basic || 0) +
+    Number(hra || 0) +
+    Number(allowances || 0);
 
   return (
     <div className="border rounded p-3 space-y-2">
@@ -14,20 +18,23 @@ export default function SalaryBreakdownPreview({
         Monthly Breakdown
       </h4>
 
-      {components.map((c) => (
-        <div
-          key={c.component_id}
-          className="flex justify-between text-sm"
-        >
-          <span>{c.name}</span>
-          <span>{c.monthly_amount}</span>
-        </div>
-      ))}
+      <Row label="Basic" value={basic} />
+      <Row label="HRA" value={hra} />
+      <Row label="Allowances" value={allowances} />
 
       <div className="border-t pt-2 flex justify-between font-medium">
-        <span>Total</span>
-        <span>{total}</span>
+        <span>Gross</span>
+        <span>{gross}</span>
       </div>
+    </div>
+  );
+}
+
+function Row({ label, value }) {
+  return (
+    <div className="flex justify-between text-sm">
+      <span>{label}</span>
+      <span>{value || 0}</span>
     </div>
   );
 }

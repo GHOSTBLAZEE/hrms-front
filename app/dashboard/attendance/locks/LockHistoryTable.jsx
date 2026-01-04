@@ -37,11 +37,15 @@ export default function LockHistoryTable({ history = [] }) {
             >
               <div>
                 <div className="font-medium">
-                  {item.action.toUpperCase()}
+                  {item.status ? item.status.toUpperCase() : "—"}
                 </div>
                 <div className="text-xs text-muted-foreground">
                   {item.performed_by?.name ?? "System"} ·{" "}
-                  {new Date(item.created_at).toLocaleString()}
+                  <span className="text-xs text-muted-foreground">
+                    {item.locked_at
+                      ? new Date(item.locked_at).toLocaleString()
+                      : "—"}
+                  </span>
                 </div>
               </div>
 

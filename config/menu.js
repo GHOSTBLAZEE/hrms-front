@@ -3,7 +3,6 @@ import {
   Users,
   CalendarCheck,
   Plane,
-  Settings,
   Building2,
   MapPin,
   Layers,
@@ -12,14 +11,11 @@ import {
   FileBarChart2,
   Wallet,
   ShieldCheck,
-  Lock,
-  UserCheck,
 } from "lucide-react";
 
 export const menu = {
   /* ================= MAIN ================= */
   main: [
-    /* ---------- Dashboard ---------- */
     {
       title: "Dashboard",
       url: "/dashboard",
@@ -27,7 +23,6 @@ export const menu = {
       permissions: [],
     },
 
-    /* ---------- Employees ---------- */
     {
       title: "Employees",
       url: "/dashboard/employees",
@@ -35,21 +30,17 @@ export const menu = {
       permissions: ["view employees"],
     },
 
-    /* ---------- Approvals (CENTRAL) ---------- */
     {
       title: "Approvals",
       url: "/dashboard/approvals",
       icon: ClipboardList,
       permissions: [
         "approve leave",
-        "approve overtime",
       ],
     },
 
-    /* ---------- Attendance ---------- */
     {
       title: "Attendance",
-      url: "/dashboard/attendance",
       icon: CalendarCheck,
       permissions: ["view attendance"],
       subMenu: [
@@ -84,11 +75,8 @@ export const menu = {
       ],
     },
 
-
-    /* ---------- Leaves ---------- */
     {
       title: "Leaves",
-      url: "/dashboard/leaves",
       icon: Plane,
       permissions: ["view leave"],
       subMenu: [
@@ -100,10 +88,8 @@ export const menu = {
       ],
     },
 
-    /* ---------- Payroll ---------- */
     {
       title: "Payroll",
-      url: "/dashboard/payroll",
       icon: Wallet,
       permissions: ["view payroll"],
       subMenu: [
@@ -125,10 +111,8 @@ export const menu = {
       ],
     },
 
-    /* ---------- Reports ---------- */
     {
       title: "Reports",
-      url: "/dashboard/reports",
       icon: FileBarChart2,
       permissions: [
         "view attendance reports",
@@ -146,9 +130,8 @@ export const menu = {
         {
           title: "Attendance Integrity",
           url: "/dashboard/reports/attendance-integrity",
-          permissions: ["view audit logs"],
+          permissions: ["view attendance reports"],
         },
-
         {
           title: "Leave Reports",
           url: "/dashboard/reports/leaves",

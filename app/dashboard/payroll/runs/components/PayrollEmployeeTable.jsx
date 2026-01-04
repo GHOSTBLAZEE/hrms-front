@@ -14,6 +14,14 @@ import PayrollEmployeeDrawer from "./PayrollEmployeeDrawer";
 export default function PayrollEmployeeTable({ employees }) {
   const [selected, setSelected] = useState(null);
 
+  if (!employees || employees.length === 0) {
+    return (
+      <div className="p-6 text-muted-foreground">
+        No payroll employees found.
+      </div>
+    );
+  }
+
   return (
     <>
       <div className="border rounded-md">
@@ -21,10 +29,18 @@ export default function PayrollEmployeeTable({ employees }) {
           <TableHeader>
             <TableRow>
               <TableHead>Employee</TableHead>
-              <TableHead>Days Paid</TableHead>
-              <TableHead>Gross</TableHead>
-              <TableHead>Deductions</TableHead>
-              <TableHead>Net Pay</TableHead>
+              <TableHead className="text-right">
+                Days Paid
+              </TableHead>
+              <TableHead className="text-right">
+                Gross
+              </TableHead>
+              <TableHead className="text-right">
+                Deductions
+              </TableHead>
+              <TableHead className="text-right">
+                Net Pay
+              </TableHead>
             </TableRow>
           </TableHeader>
 
@@ -35,12 +51,20 @@ export default function PayrollEmployeeTable({ employees }) {
                 className="cursor-pointer hover:bg-muted/50"
                 onClick={() => setSelected(emp)}
               >
-                <TableCell>{emp.employee_name}</TableCell>
-                <TableCell>{emp.paid_days}</TableCell>
-                <TableCell>{emp.gross}</TableCell>
-                <TableCell>{emp.deductions}</TableCell>
-                <TableCell className="font-medium">
-                  {emp.net_pay}
+                <TableCell>
+                  {emp.employee_name}
+                </TableCell>
+                <TableCell className="text-right">
+                  {emp.paid_days}
+                </TableCell>
+                <TableCell className="text-right">
+                  ₹{emp.gross}
+                </TableCell>
+                <TableCell className="text-right">
+                  ₹{emp.deductions}
+                </TableCell>
+                <TableCell className="text-right font-medium">
+                  ₹{emp.net_pay}
                 </TableCell>
               </TableRow>
             ))}

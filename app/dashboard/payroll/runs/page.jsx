@@ -1,32 +1,39 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
-import apiClient from "@/lib/apiClient";
+import { useSalaryReadiness } from "./hooks/useSalaryReadiness";
+
+
 
 export default function PayrollRunsPage() {
-  const router = useRouter();
+  const { isLoading, missing } = useSalaryReadiness();
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["latest-payroll-run"],
-    queryFn: async () => {
-      const res = await apiClient.get("/api/v1/reports/payroll-runs");
-      return res.data;
-    },
-  });
+  if (isLoading) {
+    return <div>Checking salary readiness…</div>;
+  }
 
-  if (isLoading) return <div className="p-6">Loading…</div>;
-
-  const latestRun = data?.data?.[0];
-
-  if (!latestRun) {
+  if (missing.length > 0) {
     return (
-      <div className="p-6 text-muted-foreground">
-        No payroll runs found.
+      <div>
+        <h2 className="text-lg font-semibold">
+          Employees Missing Salary Structure
+        </h2>
+
+        <ul className="mt-2 list-disc pl-5 text-red-600">
+          {missing.map(emp => (
+            <li key={emp.id}>
+              {emp.name} ({emp.employee_code})
+            </li>
+          ))}
+        </ul>
       </div>
     );
   }
 
-  router.replace(`/dashboard/payroll/runs/${latestRun.id}`);
-  return null;
+  return (
+    <div>
+      <h2 className="text-lg font-semibold text-green-600">
+        All employees are salary-ready ✅
+      </h2>
+    </div>
+  );
 }
