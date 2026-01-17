@@ -4,7 +4,8 @@ export default function ApprovalFilters({ value, onChange }) {
   const options = [
     { key: "all", label: "All" },
     { key: "leave", label: "Leave" },
-    { key: "attendance", label: "Attendance" },
+    { key: "attendance", label: "Attendance Corrections" },
+    { key: "attendance_unlock", label: "Attendance Unlocks" },
   ];
 
   return (

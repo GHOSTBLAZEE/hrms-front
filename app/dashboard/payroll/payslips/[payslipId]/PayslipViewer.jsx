@@ -4,17 +4,42 @@ import { useQuery } from "@tanstack/react-query";
 import apiClient from "@/lib/apiClient";
 import { format } from "date-fns";
 
+/* ----------------------------
+ | API
+ |----------------------------*/
 async function fetchPayslip(id) {
   const res = await apiClient.get(`/api/v1/payslips/${id}`);
-  return res.data;
+  return res.data.data;
 }
 
+/* ----------------------------
+ | Page
+ |----------------------------*/
 export default function PayslipViewerPage({ payslipId }) {
-  const { data, isLoading } = useQuery({
+  // 🚫 Invalid route
+  if (!payslipId) {
+    return (
+      <div className="text-sm text-destructive">
+        Invalid or missing payslip ID.
+      </div>
+    );
+  }
+
+  const {
+    data: payslip,
+    isLoading,
+    isError,
+    error,
+  } = useQuery({
     queryKey: ["payslip", payslipId],
     queryFn: () => fetchPayslip(payslipId),
+    enabled: true,
+    retry: false,
   });
-
+  
+  /* ----------------------------
+  | Loading / Error
+  |----------------------------*/
   if (isLoading) {
     return (
       <div className="text-sm text-muted-foreground">
@@ -22,14 +47,38 @@ export default function PayslipViewerPage({ payslipId }) {
       </div>
     );
   }
+  console.log(payslip);
 
-  const p = data;
+  if (isError || !payslip) {
+    return (
+      <div className="text-sm text-destructive">
+        Failed to load payslip.
+      </div>
+    );
+  }
 
-  const monthLabel = format(
-    new Date(p.year, p.month - 1),
-    "MMMM yyyy"
-  );
+  /* ----------------------------
+   | Date (ABSOLUTELY SAFE)
+   |----------------------------*/
+  let monthLabel = "Unknown period";
 
+  try {
+    const date = new Date(
+      Number(payslip.year),
+      Number(payslip.month) - 1,
+      1
+    );
+
+    if (!isNaN(date.getTime())) {
+      monthLabel = format(date, "MMMM yyyy");
+    }
+  } catch {
+    // swallow — UI must never crash
+  }
+
+  /* ----------------------------
+   | Render
+   |----------------------------*/
   return (
     <div className="mx-auto max-w-3xl space-y-6 rounded-md border bg-white p-6">
       {/* Header */}
@@ -39,12 +88,10 @@ export default function PayslipViewerPage({ payslipId }) {
             Payslip — {monthLabel}
           </h1>
           <p className="text-sm text-muted-foreground">
-            {p.employee_name}
+            Employee #{payslip.employee_id}
           </p>
-
           <div className="mt-1 text-xs text-muted-foreground">
-            This payslip is final and generated from a
-            locked payroll run.
+            This payslip is final and generated from a locked payroll run.
           </div>
         </div>
 
@@ -52,7 +99,8 @@ export default function PayslipViewerPage({ payslipId }) {
           className="text-sm underline"
           onClick={() =>
             window.open(
-              `/api/v1/payslips/${p.id}/pdf`,
+              payslip.actions?.download_pdf ??
+                `/api/v1/payslips/${payslip.id}/pdf`,
               "_blank"
             )
           }
@@ -61,18 +109,21 @@ export default function PayslipViewerPage({ payslipId }) {
         </button>
       </header>
 
-      {/* Summary */}
+      {/* Earnings & Deductions */}
       <section className="grid grid-cols-2 gap-4 text-sm">
-        <Row label="Paid Days" value={p.paid_days} />
-        <Row label="Basic Salary" value={p.basic} />
-        <Row label="HRA" value={p.hra} />
+        <Row label="Basic Salary" value={payslip.earnings?.basic} />
+        <Row label="HRA" value={payslip.earnings?.hra} />
         <Row
           label="Other Allowances"
-          value={p.allowances}
+          value={payslip.earnings?.allowances}
+        />
+        <Row
+          label="Total Earnings"
+          value={payslip.earnings?.gross}
         />
         <Row
           label="Total Deductions"
-          value={p.deductions}
+          value={payslip.deductions?.total}
         />
       </section>
 
@@ -80,7 +131,7 @@ export default function PayslipViewerPage({ payslipId }) {
       <div className="rounded-md border bg-muted/20 p-4">
         <Row
           label="Net Pay"
-          value={p.net_pay}
+          value={payslip.net_pay}
           strong
           large
         />
@@ -88,9 +139,9 @@ export default function PayslipViewerPage({ payslipId }) {
 
       {/* Footer */}
       <footer className="text-xs text-muted-foreground">
-        Generated as part of the finalized payroll for{" "}
-        {monthLabel}. For any discrepancies, please
-        contact HR.
+        Generated on{" "}
+        {format(new Date(payslip.generated_at), "dd MMM yyyy")}
+        . This document is system-generated and audit-locked.
       </footer>
     </div>
   );
@@ -102,16 +153,14 @@ export default function PayslipViewerPage({ payslipId }) {
 function Row({ label, value, strong, large }) {
   return (
     <div className="flex justify-between">
-      <span className="text-muted-foreground">
-        {label}
-      </span>
+      <span className="text-muted-foreground">{label}</span>
       <span
         className={[
           strong ? "font-semibold" : "",
           large ? "text-base" : "",
         ].join(" ")}
       >
-        {value}
+        {value ?? "—"}
       </span>
     </div>
   );

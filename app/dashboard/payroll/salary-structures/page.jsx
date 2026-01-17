@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import apiClient from "@/lib/apiClient";
 
 import SalaryStructureTable from "./SalaryStructureTable";
@@ -9,27 +9,26 @@ import SalaryStructureDrawer from "./SalaryStructureDrawer";
 import { Button } from "@/components/ui/button";
 
 export default function SalaryStructuresPage() {
+  const qc = useQueryClient();
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [open, setOpen] = useState(false);
 
-  // ✅ Correct endpoint
-  const { data: structures = [], refetch, isLoading } = useQuery({
+  const { data: structures = [], isLoading } = useQuery({
     queryKey: ["salary-structures"],
     queryFn: async () => {
-      const res = await apiClient.get("api/v1/salary-structures");
+      const res = await apiClient.get("/api/v1/salary-structures");
       return res.data;
     },
   });
-console.log(structures);
 
-  const createMutation = useMutation({
-    mutationFn: async (payload) => {
-      await apiClient.post("/api/v1/salary-structures", payload);
-    },
+  const createSalaryMutation = useMutation({
+    mutationFn: async (payload) =>
+      apiClient.post("/api/v1/salary-structures", payload),
+
     onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["salary-structures"] });
       setOpen(false);
       setSelectedEmployee(null);
-      refetch();
     },
   });
 
@@ -57,13 +56,14 @@ console.log(structures);
         open={open}
         onClose={() => setOpen(false)}
         employee={selectedEmployee}
-        onSubmit={(values) => {
-          createMutation.mutate({
+        loading={createSalaryMutation.isPending}
+        onSubmit={(values) =>
+          createSalaryMutation.mutate({
             ...values,
             employee_id: selectedEmployee.id,
-          });
-        }}
-        loading={createMutation.isPending}
+            is_active: true,
+          })
+        }
       />
     </div>
   );

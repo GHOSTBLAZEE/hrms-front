@@ -71,7 +71,10 @@ console.log(data);
 
   const bulkApprove = async () => {
     for (const item of data) {
-      if (selected.includes(item.id)) {
+      if (
+        selected.includes(item.id) &&
+        item.status === "pending"
+      ) {
         await approve.mutateAsync({
           type: item.type,
           id: item.id,
@@ -80,6 +83,7 @@ console.log(data);
     }
     setSelected([]);
   };
+
 
   const bulkRejectConfirm = async (reason) => {
     for (const item of data) {

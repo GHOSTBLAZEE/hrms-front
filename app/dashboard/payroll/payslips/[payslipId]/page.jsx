@@ -1,9 +1,8 @@
-"use client";
+import PayslipViewerPage from "./PayslipViewer";
 
-import PayslipViewerPage from "./PayslipViewerPage";
 
-export default function Page({ params }) {
-  return (
-    <PayslipViewerPage payslipId={params.payslipId} />
-  );
+export default async function Page({ params }) {
+  const { payslipId } = await params;
+
+  return <PayslipViewerPage payslipId={payslipId} />;
 }

@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import SalaryBreakdownPreview from "./SalaryBreakdownPreview";
 
 export default function SalaryStructureDrawer({
@@ -25,13 +25,21 @@ export default function SalaryStructureDrawer({
   const [allowances, setAllowances] = useState("");
   const [error, setError] = useState(null);
 
+  useEffect(() => {
+    if (!open) {
+      setBasic("");
+      setHra("");
+      setAllowances("");
+      setError(null);
+    }
+  }, [open]);
+
   if (!employee) return null;
 
-  const payrollStart = new Date(
-    payrollYear,
-    payrollMonth - 1,
-    1
-  );
+  const payrollStart =
+    payrollYear && payrollMonth
+      ? new Date(payrollYear, payrollMonth - 1, 1)
+      : null;
 
   return (
     <Sheet open={open} onOpenChange={onClose}>
@@ -51,18 +59,14 @@ export default function SalaryStructureDrawer({
               e.target.effective_from.value
             );
 
-            // 🚨 VALIDATION
-            if (effectiveFrom > payrollStart) {
+            if (payrollStart && effectiveFrom > payrollStart) {
               setError(
-                `Effective date must be on or before ${
-                  payrollStart.toLocaleDateString()
-                } for this payroll run.`
+                `Effective date must be on or before ${payrollStart.toLocaleDateString()}`
               );
               return;
             }
 
             onSubmit({
-              employee_id: employee.id,
               effective_from: e.target.effective_from.value,
               basic: Number(basic),
               hra: Number(hra || 0),
@@ -71,21 +75,14 @@ export default function SalaryStructureDrawer({
           }}
           className="space-y-4 mt-4"
         >
-          <Input
-            type="date"
-            name="effective_from"
-            required
-          />
+          <Input type="date" name="effective_from" required />
 
           {error && (
-            <div className="text-sm text-destructive">
-              {error}
-            </div>
+            <div className="text-sm text-destructive">{error}</div>
           )}
 
           <Input
             type="number"
-            name="basic"
             placeholder="Basic Salary"
             min="0"
             required
@@ -95,7 +92,6 @@ export default function SalaryStructureDrawer({
 
           <Input
             type="number"
-            name="hra"
             placeholder="HRA"
             min="0"
             value={hra}
@@ -104,7 +100,6 @@ export default function SalaryStructureDrawer({
 
           <Input
             type="number"
-            name="allowances"
             placeholder="Other Allowances"
             min="0"
             value={allowances}

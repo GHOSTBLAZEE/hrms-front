@@ -1,39 +1,48 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+import { useQuery } from "@tanstack/react-query";
+import apiClient from "@/lib/apiClient";
+
+import PayrollRunsLanding from "./PayrollRunsLanding";
+import MissingSalaryBanner from "./components/MissingSalaryBanner";
 import { useSalaryReadiness } from "./hooks/useSalaryReadiness";
 
-
+async function fetchLatestPayrollRun() {
+  const res = await apiClient.get("/api/v1/payroll-runs/latest");
+  return res.data ?? null;
+}
 
 export default function PayrollRunsPage() {
-  const { isLoading, missing } = useSalaryReadiness();
+  const router = useRouter();
 
-  if (isLoading) {
-    return <div>Checking salary readiness…</div>;
-  }
+  const { missing, isLoading } = useSalaryReadiness();
 
-  if (missing.length > 0) {
-    return (
-      <div>
-        <h2 className="text-lg font-semibold">
-          Employees Missing Salary Structure
-        </h2>
+  const { data: latestRun, isLoading: runLoading } = useQuery({
+    queryKey: ["latest-payroll-run"],
+    queryFn: fetchLatestPayrollRun,
+  });
 
-        <ul className="mt-2 list-disc pl-5 text-red-600">
-          {missing.map(emp => (
-            <li key={emp.id}>
-              {emp.name} ({emp.employee_code})
-            </li>
-          ))}
-        </ul>
-      </div>
-    );
+  if (isLoading || runLoading) {
+    return <div className="p-6">Loading payroll…</div>;
   }
 
   return (
-    <div>
-      <h2 className="text-lg font-semibold text-green-600">
-        All employees are salary-ready ✅
-      </h2>
+    <div className="p-6 space-y-6">
+
+      {/* ❌ Salary issues (shown ABOVE run card) */}
+      {missing.length > 0 && (
+        <MissingSalaryBanner employees={missing} />
+      )}
+
+      {/* ✅ Payroll run card ALWAYS visible */}
+      <PayrollRunsLanding
+        latestRun={latestRun}
+        onProceed={(runId) =>
+          router.push(`/dashboard/payroll/runs/${runId}`)
+        }
+        disabled={missing.length > 0}
+      />
     </div>
   );
 }

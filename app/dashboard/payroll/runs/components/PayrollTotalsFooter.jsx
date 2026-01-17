@@ -1,4 +1,6 @@
 export default function PayrollTotalsFooter({ totals }) {
+  if (!totals) return null;
+
   return (
     <div className="border rounded-md p-4 flex justify-end gap-8 text-sm">
       <Stat label="Total Gross" value={totals.gross} />

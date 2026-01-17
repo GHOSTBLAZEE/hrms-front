@@ -36,14 +36,13 @@ function Row({ label, status, hint }) {
 export default function PayrollPreflightChecklist({
   attendanceLocked,
   missingSalaryEmployees,
-  salaryLocked,
   payrollFinalized,
   onFixSalary,
 }) {
   const canFinalize =
+    !payrollFinalized &&
     attendanceLocked &&
-    missingSalaryEmployees.length === 0 &&
-    salaryLocked;
+    missingSalaryEmployees.length === 0;
 
   return (
     <div className="border rounded-md p-4 space-y-4 bg-muted/30">
@@ -52,6 +51,7 @@ export default function PayrollPreflightChecklist({
       </h3>
 
       <div className="space-y-3">
+        {/* Attendance */}
         <Row
           label="Attendance locked for payroll month"
           status={attendanceLocked ? "pass" : "fail"}
@@ -62,6 +62,7 @@ export default function PayrollPreflightChecklist({
           }
         />
 
+        {/* Salary */}
         <Row
           label="Salary structure exists for all employees"
           status={
@@ -70,42 +71,44 @@ export default function PayrollPreflightChecklist({
               : "fail"
           }
           hint={
-            missingSalaryEmployees.length
+            missingSalaryEmployees.length > 0
               ? `${missingSalaryEmployees.length} employees missing salary`
               : null
           }
         />
 
-        <Row
-          label="Salary structures are locked for finalized payroll"
-          status={salaryLocked ? "pass" : "fail"}
-          hint={
-            salaryLocked
-              ? null
-              : "Salary cannot be modified after payroll finalization."
-          }
-        />
-
-        <Row
-          label="Payroll not yet finalized"
-          status={payrollFinalized ? "warn" : "pass"}
-          hint={
-            payrollFinalized
-              ? "Payroll already finalized. No changes allowed."
-              : null
-          }
-        />
+        {/* Payroll state */}
+        {payrollFinalized ? (
+          <Row
+            label="Payroll already finalized"
+            status="pass"
+            hint="This payroll run is immutable. No changes allowed."
+          />
+        ) : (
+          <Row
+            label="Payroll not yet finalized"
+            status="warn"
+            hint="Finalize payroll once all checks pass."
+          />
+        )}
       </div>
 
-      {missingSalaryEmployees.length > 0 && (
-        <Button size="sm" onClick={onFixSalary}>
-          Fix Salary Issues
-        </Button>
-      )}
+      {/* Fix salary CTA */}
+      {!payrollFinalized &&
+        missingSalaryEmployees.length > 0 && (
+          <Button size="sm" onClick={onFixSalary}>
+            Fix Salary Issues
+          </Button>
+        )}
 
+      {/* Status footer */}
       <div className="pt-2 text-sm">
         <strong>Status:</strong>{" "}
-        {canFinalize ? (
+        {payrollFinalized ? (
+          <span className="text-gray-600">
+            Payroll finalized (read-only)
+          </span>
+        ) : canFinalize ? (
           <span className="text-green-600">
             Ready to finalize payroll
           </span>

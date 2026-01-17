@@ -7,6 +7,7 @@ import { useSalaryReadiness } from "./hooks/useSalaryReadiness";
 export default function PayrollRunsLanding({
   latestRun,
   onProceed,
+  disabled = false,
 }) {
   const { missing, isLoading } = useSalaryReadiness();
 
@@ -21,16 +22,39 @@ export default function PayrollRunsLanding({
       </div>
     );
   }
-
-  if (missing.length > 0) {
-    return (
-      <div className="p-6 space-y-4">
-        <MissingSalaryBanner employees={missing} />
-      </div>
-    );
-  }
-
   // ✅ Safe to proceed
-  onProceed(latestRun.id);
-  return null;
+  // onProceed(latestRun.id);
+  // return null;
+    return (
+    <div className="p-6 space-y-4">
+      <div className="rounded-lg border p-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold">
+              Latest Payroll Run
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              {latestRun.month}/{latestRun.year} · Status:{" "}
+              <span className="font-medium">
+                {latestRun.status}
+              </span>
+            </p>
+          </div>
+
+          <button
+            disabled={disabled}
+            className={`px-4 py-2 rounded text-white ${
+              disabled
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-primary"
+            }`}
+            onClick={() => onProceed(latestRun.id)}
+          >
+            Open Payroll
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
 }
