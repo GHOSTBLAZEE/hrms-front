@@ -5,7 +5,7 @@ import LeavesTab from "../sections/LeavesTab";
 import OverviewTab from "../sections/OverviewTab";
 import PayrollTab from "../sections/PayrollTab";
 import EmployeeSalaryTab from "./salary/EmployeeSalaryTab";
-
+import EmployeeStatutoryTab from "./statutory/EmployeeStatutoryTab";
 
 
 export const tabs = [
@@ -33,6 +33,13 @@ export const tabs = [
     component: EmployeeSalaryTab,
     permissions: ["manage salary structures"],
   },
+  {
+    key: "statutory",
+    title: "Statutory",
+    component: EmployeeStatutoryTab,
+    permissions: ["manage employees"],
+  },
+
   {
     key: "payroll",
     title: "Payroll",

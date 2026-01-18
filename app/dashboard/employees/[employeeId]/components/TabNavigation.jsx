@@ -1,12 +1,22 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { hasPermission } from "@/lib/permissions";
 
-export default function TabNavigation({ tabs, employee }) {
+export default function TabNavigation({
+  tabs,
+  employee,
+  employeeId,
+}) {
   const { permissions } = useAuth();
+  const searchParams = useSearchParams();
+  const router = useRouter();
 
+  /* =========================================================
+   | Visible tabs (permission-aware)
+   |========================================================= */
   const visibleTabs = useMemo(
     () =>
       tabs.filter((tab) =>
@@ -15,19 +25,43 @@ export default function TabNavigation({ tabs, employee }) {
     [tabs, permissions]
   );
 
-  const [active, setActive] = useState(
-    visibleTabs[0]?.key
-  );
+  /* =========================================================
+   | Normalize tab from URL (ONCE)
+   |========================================================= */
+  const initialTab = useMemo(() => {
+    const urlTab = searchParams.get("tab");
+    if (!urlTab) return visibleTabs[0]?.key;
 
-  // Ensure active tab is always valid
-  useEffect(() => {
-    if (
-      !visibleTabs.find((t) => t.key === active)
-    ) {
-      setActive(visibleTabs[0]?.key);
-    }
-  }, [visibleTabs, active]);
+    const match = visibleTabs.find(
+      (t) => t.key === urlTab
+    );
 
+    return match ? match.key : visibleTabs[0]?.key;
+  }, [searchParams, visibleTabs]);
+
+  /* =========================================================
+   | Active tab state (single source after mount)
+   |========================================================= */
+  const [active, setActive] = useState(initialTab);
+
+  /* =========================================================
+   | Handle tab click (USER INTENT ONLY)
+   |========================================================= */
+  const handleTabChange = (tabKey) => {
+    setActive(tabKey);
+
+    const params = new URLSearchParams(searchParams);
+    params.set("tab", tabKey);
+
+    router.replace(
+      `/dashboard/employees/${employeeId}?${params.toString()}`,
+      { scroll: false }
+    );
+  };
+
+  /* =========================================================
+   | Guard: no accessible tabs
+   |========================================================= */
   if (!visibleTabs.length) {
     return (
       <div className="rounded-md border p-6 text-sm text-muted-foreground">
@@ -40,6 +74,9 @@ export default function TabNavigation({ tabs, employee }) {
     (t) => t.key === active
   )?.component;
 
+  /* =========================================================
+   | Render
+   |========================================================= */
   return (
     <div className="space-y-4">
       {/* Tabs */}
@@ -50,7 +87,7 @@ export default function TabNavigation({ tabs, employee }) {
           return (
             <button
               key={tab.key}
-              onClick={() => setActive(tab.key)}
+              onClick={() => handleTabChange(tab.key)}
               className={`
                 relative pb-2 text-sm transition
                 ${
@@ -73,7 +110,10 @@ export default function TabNavigation({ tabs, employee }) {
       {/* Content */}
       <div>
         {ActiveTab ? (
-          <ActiveTab employee={employee} />
+          <ActiveTab
+            employee={employee}
+            employeeId={employeeId}
+          />
         ) : (
           <div className="text-sm text-muted-foreground">
             No access

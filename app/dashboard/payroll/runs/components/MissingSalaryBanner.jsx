@@ -1,11 +1,27 @@
+"use client";
+
 import { AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
-export default function MissingSalaryBanner({
-  employees,
-  onAddSalary,
-}) {
+export default function MissingSalaryBanner({ employees = [] }) {
+  const router = useRouter();
+
   if (!employees.length) return null;
+
+  const employeeIds = employees.map((e) => e.id);
+
+  const goToEmployeeSalary = (employeeId) => {
+    router.push(
+      `/dashboard/employees/${employeeId}?tab=salary&highlight=${employeeId}`
+    );
+  };
+
+  const goToBulkSalaryFix = () => {
+    router.push(
+      `/dashboard/employees?tab=salary&highlight=${employeeIds.join(",")}`
+    );
+  };
 
   return (
     <div className="border border-yellow-300 bg-yellow-50 rounded-md p-4 space-y-3">
@@ -22,7 +38,7 @@ export default function MissingSalaryBanner({
       </p>
 
       <ul className="space-y-2">
-        {employees.map(emp => (
+        {employees.map((emp) => (
           <li
             key={emp.id}
             className="flex justify-between items-center bg-white rounded px-3 py-2"
@@ -33,13 +49,23 @@ export default function MissingSalaryBanner({
 
             <Button
               size="sm"
-              onClick={() => onAddSalary(emp)}
+              onClick={() => goToEmployeeSalary(emp.id)}
             >
               Add Salary
             </Button>
           </li>
         ))}
       </ul>
+
+      {employees.length > 1 && (
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={goToBulkSalaryFix}
+        >
+          Fix All Salaries
+        </Button>
+      )}
     </div>
   );
 }

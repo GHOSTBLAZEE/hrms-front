@@ -10,7 +10,9 @@ import { useSalaryReadiness } from "./hooks/useSalaryReadiness";
 
 async function fetchLatestPayrollRun() {
   const res = await apiClient.get("/api/v1/payroll-runs/latest");
-  return res.data ?? null;
+  console.log(res);
+  
+  return res.data?.data ?? null;
 }
 
 export default function PayrollRunsPage() {
@@ -26,13 +28,13 @@ export default function PayrollRunsPage() {
   if (isLoading || runLoading) {
     return <div className="p-6">Loading payroll…</div>;
   }
-
+ 
   return (
     <div className="p-6 space-y-6">
 
       {/* ❌ Salary issues (shown ABOVE run card) */}
       {missing.length > 0 && (
-        <MissingSalaryBanner employees={missing} />
+        <MissingSalaryBanner employees={missing}/>
       )}
 
       {/* ✅ Payroll run card ALWAYS visible */}

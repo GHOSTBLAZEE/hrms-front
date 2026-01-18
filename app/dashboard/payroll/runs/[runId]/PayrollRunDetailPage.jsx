@@ -19,7 +19,7 @@ import PayrollPreflightChecklist from "../components/PayrollPreflightChecklist";
  * Fetch payroll run details (snapshot-safe)
  */
 async function fetchPayrollRun(runId) {
-  const res = await apiClient.get(`api/v1/payroll-runs/${runId}`);
+  const res = await apiClient.get(`/api/v1/payroll-runs/${runId}`);
   return res.data;
 }
 
@@ -27,7 +27,7 @@ async function fetchPayrollRun(runId) {
  * Fetch attendance lock for payroll month
  */
 async function fetchAttendanceLock(year, month) {
-  const res = await apiClient.get(`api/v1/attendance-locks/${year}-${month}`);
+  const res = await apiClient.get(`/api/v1/attendance-locks/${year}-${month}`);
   return res.data;
 }
 
@@ -36,7 +36,7 @@ async function fetchAttendanceLock(year, month) {
  */
 async function fetchMissingSalary(year, month) {
   const res = await apiClient.get(
-    `api/v1/salary-structures/missing`,
+    `/api/v1/salary-structures/missing`,
     { params: { year, month } }
   );
   return res.data;
@@ -79,7 +79,7 @@ export default function PayrollRunDetailPage({ runId }) {
    */
   const finalizeMutation = useMutation({
     mutationFn: () =>
-      apiClient.post("/payroll/finalize", {
+      apiClient.post("/api/v1/payroll/finalize", {
         year: run.year,
         month: run.month,
       }),
@@ -207,6 +207,7 @@ export default function PayrollRunDetailPage({ runId }) {
           </div>
         </div>
       )}
+
 
 
       <PayrollEmployeeTable employees={data.employees} />
