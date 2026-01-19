@@ -1,22 +1,28 @@
-import { useAttendanceMonthlyReport } from "@/hooks/reports/useAttendanceMonthlyReport";
+"use client";
+
+import { useEmployeeAttendanceMonthly } from "@/hooks/attendance/useEmployeeAttendanceMonthly";
+import AttendanceTrend from "../[employeeId]/components/AttendanceTrend";
 
 export default function AttendanceTab({ employee }) {
   const now = new Date();
   const year = now.getFullYear();
   const month = now.getMonth() + 1;
 
-  const { data, isLoading } =
-    useAttendanceMonthlyReport({
-      year,
-      month,
-      employee_id: employee.id,
-    });
+  const { data, isLoading } = useEmployeeAttendanceMonthly({
+    employeeId: employee.id,
+    year,
+    month,
+  });
 
-  if (isLoading) return <div>Loading attendance…</div>;
+
+
+  if (isLoading) {
+    return <div className="text-sm">Loading attendance…</div>;
+  }
 
   return (
-    <div className="text-sm">
-      <div className="mb-2 font-medium">
+    <div className="text-sm space-y-3">
+      <div className="font-medium">
         Attendance Summary ({month}/{year})
       </div>
 
@@ -26,15 +32,29 @@ export default function AttendanceTab({ employee }) {
         <Stat label="Leave" value={data?.leave_days} />
         <Stat label="OT (hrs)" value={data?.overtime_hours} />
       </div>
+      <AttendanceTrend employeeId={employee.id} />
     </div>
   );
 }
 
+
 function Stat({ label, value }) {
+  const format = (val) => {
+    if (val === null || val === undefined) return "—";
+
+    const num = Number(val);
+
+    // Integers stay clean, decimals (0.5, 1.25) are preserved
+    return Number.isInteger(num) ? num : num.toString();
+  };
+
   return (
     <div>
       <div className="text-muted-foreground">{label}</div>
-      <div className="font-semibold">{value ?? "—"}</div>
+      <div className="font-semibold">
+        {format(value)}
+      </div>
     </div>
   );
 }
+

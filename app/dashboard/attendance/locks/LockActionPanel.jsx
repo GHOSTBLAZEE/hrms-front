@@ -8,9 +8,12 @@ export default function LockActionPanel({
   canLock,
   canUnlock,
   payrollFinalized,
+  locking,
+  unlocking,
   onLock,
   onRequestUnlock,
 }) {
+
   /* ------------------------------------------------------------
    | HARD STOP: Payroll finalized
    |------------------------------------------------------------ */
@@ -42,8 +45,9 @@ export default function LockActionPanel({
             <Button
               variant="outline"
               onClick={onRequestUnlock}
+              disabled={unlocking}
             >
-              Request Unlock
+              {unlocking ? "Requesting…" : "Request Unlock"}
             </Button>
           )}
         </AlertDescription>
@@ -81,9 +85,13 @@ export default function LockActionPanel({
           <li>Freeze data for payroll</li>
         </ul>
 
-        <Button onClick={onLock}>
-          Lock Attendance
+        <Button
+          onClick={onLock}
+          disabled={locking}
+        >
+          {locking ? "Locking…" : "Lock Attendance"}
         </Button>
+
       </AlertDescription>
     </Alert>
   );

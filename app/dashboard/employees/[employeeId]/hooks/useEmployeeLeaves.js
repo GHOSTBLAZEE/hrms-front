@@ -1,7 +1,8 @@
 "use client";
 
-import LeaveBalanceCards from "../[employeeId]/components/LeaveBalanceCards";
-import LeaveHistory from "../[employeeId]/components/LeaveHistory";
+import LeaveBalanceCards from "../components/LeaveBalanceCards";
+import LeaveHistory from "../components/LeaveHistory";
+
 
 
 export default function LeavesTab({ employee }) {

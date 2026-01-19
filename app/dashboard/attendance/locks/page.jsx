@@ -13,6 +13,8 @@ import AttendanceLockHeader from "./AttendanceLockHeader";
 import LockSummaryCard from "./LockSummaryCard";
 import LockActionPanel from "./LockActionPanel";
 import LockHistoryTable from "./LockHistoryTable";
+import { toast } from "sonner";
+import { handleApiError } from "@/lib/handleApiError";
 
 const DEFAULT_LOCK = {
   status: "unlocked",
@@ -49,7 +51,13 @@ export default function AttendanceLockPage() {
       return res.data;
     },
     staleTime: 30_000,
+    onError: (error) => {
+      handleApiError(error, {
+        fallback: "Failed to load attendance lock status",
+      });
+    },
   });
+
 
   const lock = lockData ?? DEFAULT_LOCK;
 
@@ -61,11 +69,22 @@ export default function AttendanceLockPage() {
       apiClient.post(
         `/api/v1/attendance-locks/${month}/lock`
       ),
-    onSuccess: () =>
+
+    onSuccess: () => {
+      toast.success("Attendance locked successfully");
+
       queryClient.invalidateQueries({
         queryKey: ["attendance-lock", month],
-      }),
+      });
+    },
+
+    onError: (error) => {
+      handleApiError(error, {
+        fallback: "Unable to lock attendance",
+      });
+    },
   });
+
 
   /* ------------------------------------------------------------
    | Request unlock (dual approval)
@@ -80,11 +99,24 @@ export default function AttendanceLockPage() {
           reason,
         }
       ),
-    onSuccess: () =>
+
+    onSuccess: () => {
+      toast.success(
+        "Unlock request submitted for approval"
+      );
+
       queryClient.invalidateQueries({
         queryKey: ["attendance-lock", month],
-      }),
+      });
+    },
+
+    onError: (error) => {
+      handleApiError(error, {
+        fallback: "Failed to request unlock",
+      });
+    },
   });
+
 
   /* ------------------------------------------------------------
    | Loading
@@ -111,6 +143,8 @@ export default function AttendanceLockPage() {
         canLock={lock.can_lock}
         canUnlock={lock.can_unlock}
         payrollFinalized={lock.payroll_finalized}
+        locking={lockMutation.isPending}
+        unlocking={requestUnlockMutation.isPending}
         onLock={() => lockMutation.mutate()}
         onRequestUnlock={() =>
           requestUnlockMutation.mutate(
@@ -118,6 +152,7 @@ export default function AttendanceLockPage() {
           )
         }
       />
+
 
       {/* 🔄 Recalculation button will go HERE later */}
 

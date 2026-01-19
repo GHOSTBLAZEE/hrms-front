@@ -1,48 +1,52 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  getLeavesApi,
-  applyLeaveApi,
-  approveLeaveApi,
-  cancelLeaveApi,
-} from "@/lib/leaveApi";
-import { toast } from "sonner";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { leaveApi } from '@/lib/api/leaves';
 
-export function useLeaves() {
+export function useLeaveBalances(employeeId) {
+  return useQuery({
+    queryKey: ['leave-balances', employeeId],
+    queryFn: () => leaveApi.balances(employeeId).then(r => r.data),
+    enabled: !!employeeId,
+  });
+}
+
+export function useEmployeeLeaves(employeeId) {
+  return useQuery({
+    queryKey: ['employee-leaves', employeeId],
+    queryFn: () => leaveApi.employeeLeaves(employeeId).then(r => r.data),
+    enabled: !!employeeId,
+  });
+}
+
+export function useLeaveApprovals(status = 'pending') {
+  return useQuery({
+    queryKey: ['leave-approvals', status],
+    queryFn: () => leaveApi.listApprovals(status).then(r => r.data),
+  });
+}
+
+export function useLeaveActions() {
   const qc = useQueryClient();
 
-  const query = useQuery({
-    queryKey: ["leaves"],
-    queryFn: getLeavesApi,
-  });
-
-  const apply = useMutation({
-    mutationFn: applyLeaveApi,
-    onSuccess: () => {
-      toast.success("Leave applied");
-      qc.invalidateQueries(["leaves"]);
-    },
-  });
-
-  const approve = useMutation({
-    mutationFn: approveLeaveApi,
-    onSuccess: () => {
-      toast.success("Leave approved");
-      qc.invalidateQueries(["leaves"]);
-    },
-  });
-
-  const cancel = useMutation({
-    mutationFn: cancelLeaveApi,
-    onSuccess: () => {
-      toast.success("Leave cancelled");
-      qc.invalidateQueries(["leaves"]);
-    },
-  });
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: ['leave-balances'] });
+    qc.invalidateQueries({ queryKey: ['employee-leaves'] });
+    qc.invalidateQueries({ queryKey: ['leave-approvals'] });
+  };
 
   return {
-    ...query,
-    apply,
-    approve,
-    cancel,
+    approve: useMutation({
+      mutationFn: leaveApi.approve,
+      onSuccess: invalidate,
+    }),
+
+    reject: useMutation({
+      mutationFn: leaveApi.reject,
+      onSuccess: invalidate,
+    }),
+
+    cancel: useMutation({
+      mutationFn: leaveApi.cancel,
+      onSuccess: invalidate,
+    }),
   };
 }

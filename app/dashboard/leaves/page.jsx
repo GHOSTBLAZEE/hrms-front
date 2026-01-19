@@ -3,14 +3,27 @@
 import { Button } from "@/components/ui/button";
 import { useLeaves } from "@/hooks/useLeaves";
 
+
+import { useState } from "react";
+import ApplyLeaveDialog from "./components/ApplyLeaveDialog";
+
 export default function LeavesPage() {
   const { data, isLoading, approve, cancel } = useLeaves();
+  const [open, setOpen] = useState(false);
 
   if (isLoading) return <div>Loading...</div>;
 
   return (
     <div className="p-6 space-y-4">
-      <h1 className="text-xl font-semibold">Leaves</h1>
+      <div className="flex justify-between items-center">
+        <h1 className="text-xl font-semibold">Leaves</h1>
+
+        <Button onClick={() => setOpen(true)}>
+          Apply Leave
+        </Button>
+      </div>
+
+      <ApplyLeaveDialog open={open} onClose={() => setOpen(false)} />
 
       {data?.data.map((leave) => (
         <div
