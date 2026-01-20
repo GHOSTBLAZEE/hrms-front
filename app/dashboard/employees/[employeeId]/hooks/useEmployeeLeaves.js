@@ -1,30 +1,26 @@
 "use client";
 
-import LeaveBalanceCards from "../components/LeaveBalanceCards";
-import LeaveHistory from "../components/LeaveHistory";
+import { useQuery } from "@tanstack/react-query";
+import apiClient from "@/lib/apiClient";
 
-
-
-export default function LeavesTab({ employee }) {
-  return (
-    <div className="space-y-6">
-      {/* Leave Balances */}
-      <section>
-        <h3 className="text-sm font-medium mb-2">
-          Leave Balances
-        </h3>
-
-        <LeaveBalanceCards employeeId={employee.id} />
-      </section>
-
-      {/* Leave History */}
-      <section>
-        <h3 className="text-sm font-medium mb-2">
-          Leave History
-        </h3>
-
-        <LeaveHistory employeeId={employee.id} />
-      </section>
-    </div>
+/**
+ * Fetch employee leave history
+ */
+async function fetchEmployeeLeaves(employeeId) {
+  const res = await apiClient.get(
+    `/api/v1/employees/${employeeId}/leaves`
   );
+
+  return res.data;
+}
+
+/**
+ * Employee leave history (READ-ONLY)
+ */
+export function useEmployeeLeaves(employeeId) {
+  return useQuery({
+    queryKey: ["employee-leaves", employeeId],
+    queryFn: () => fetchEmployeeLeaves(employeeId),
+    enabled: !!employeeId,
+  });
 }

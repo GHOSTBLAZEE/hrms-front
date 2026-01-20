@@ -1,5 +1,6 @@
+import { leaveApi } from '@/lib/leaveApi';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { leaveApi } from '@/lib/api/leaves';
+
 
 export function useLeaveBalances(employeeId) {
   return useQuery({
@@ -24,16 +25,25 @@ export function useLeaveApprovals(status = 'pending') {
   });
 }
 
+
+/* =========================================================
+ | Leave Actions (WRITE)
+ |========================================================= */
 export function useLeaveActions() {
   const qc = useQueryClient();
 
   const invalidate = () => {
-    qc.invalidateQueries({ queryKey: ['leave-balances'] });
-    qc.invalidateQueries({ queryKey: ['employee-leaves'] });
-    qc.invalidateQueries({ queryKey: ['leave-approvals'] });
+    qc.invalidateQueries({ queryKey: ["leave-balances"] });
+    qc.invalidateQueries({ queryKey: ["employee-leaves"] });
+    qc.invalidateQueries({ queryKey: ["leave-approvals"] });
   };
 
   return {
+    apply: useMutation({
+      mutationFn: leaveApi.apply,
+      onSuccess: invalidate,
+    }),
+
     approve: useMutation({
       mutationFn: leaveApi.approve,
       onSuccess: invalidate,
@@ -50,3 +60,4 @@ export function useLeaveActions() {
     }),
   };
 }
+

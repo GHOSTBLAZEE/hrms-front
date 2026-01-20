@@ -4,19 +4,18 @@ import { useQuery } from "@tanstack/react-query";
 import apiClient from "@/lib/apiClient";
 import { format } from "date-fns";
 
-/* ----------------------------
+/* =========================================================
  | API
- |----------------------------*/
+ |========================================================= */
 async function fetchPayslip(id) {
   const res = await apiClient.get(`/api/v1/payslips/${id}`);
   return res.data.data;
 }
 
-/* ----------------------------
+/* =========================================================
  | Page
- |----------------------------*/
+ |========================================================= */
 export default function PayslipViewerPage({ payslipId }) {
-  // 🚫 Invalid route
   if (!payslipId) {
     return (
       <div className="text-sm text-destructive">
@@ -29,17 +28,12 @@ export default function PayslipViewerPage({ payslipId }) {
     data: payslip,
     isLoading,
     isError,
-    error,
   } = useQuery({
     queryKey: ["payslip", payslipId],
     queryFn: () => fetchPayslip(payslipId),
-    enabled: true,
     retry: false,
   });
-  
-  /* ----------------------------
-  | Loading / Error
-  |----------------------------*/
+
   if (isLoading) {
     return (
       <div className="text-sm text-muted-foreground">
@@ -47,7 +41,6 @@ export default function PayslipViewerPage({ payslipId }) {
       </div>
     );
   }
-  console.log(payslip);
 
   if (isError || !payslip) {
     return (
@@ -57,41 +50,60 @@ export default function PayslipViewerPage({ payslipId }) {
     );
   }
 
-  /* ----------------------------
-   | Date (ABSOLUTELY SAFE)
-   |----------------------------*/
-  let monthLabel = "Unknown period";
-
+  /* =========================================================
+   | Period label (SAFE)
+   |========================================================= */
+  let periodLabel = "Unknown period";
   try {
-    const date = new Date(
-      Number(payslip.year),
-      Number(payslip.month) - 1,
-      1
-    );
-
-    if (!isNaN(date.getTime())) {
-      monthLabel = format(date, "MMMM yyyy");
+    const d = new Date(payslip.year, payslip.month - 1, 1);
+    if (!isNaN(d.getTime())) {
+      periodLabel = format(d, "MMMM yyyy");
     }
-  } catch {
-    // swallow — UI must never crash
-  }
+  } catch {}
 
-  /* ----------------------------
+  const {
+    // Salary
+    gross,
+    prorated_gross,
+    net_pay,
+
+    // Attendance snapshot
+    present_days,
+    paid_leave_days,
+    unpaid_leave_days,
+    payable_days,
+    total_working_days,
+
+    // Meta
+    generated_at,
+    employee_name,
+  } = payslip;
+
+  const isProrated =
+    typeof prorated_gross === "number" &&
+    typeof gross === "number" &&
+    prorated_gross !== gross;
+
+  /* =========================================================
    | Render
-   |----------------------------*/
+   |========================================================= */
   return (
     <div className="mx-auto max-w-3xl space-y-6 rounded-md border bg-white p-6">
-      {/* Header */}
+      {/* ================= Header ================= */}
       <header className="flex items-start justify-between">
         <div>
           <h1 className="text-xl font-semibold">
-            Payslip — {monthLabel}
+            Payslip — {periodLabel}
           </h1>
+
           <p className="text-sm text-muted-foreground">
-            Employee #{payslip.employee_id}
+            {employee_name
+              ? employee_name
+              : `Employee #${payslip.employee_id}`}
           </p>
+
           <div className="mt-1 text-xs text-muted-foreground">
-            This payslip is final and generated from a locked payroll run.
+            Generated from a locked payroll run (immutable)
           </div>
         </div>
 
@@ -109,59 +121,107 @@ export default function PayslipViewerPage({ payslipId }) {
         </button>
       </header>
 
-      {/* Earnings & Deductions */}
-      <section className="grid grid-cols-2 gap-4 text-sm">
-        <Row label="Basic Salary" value={payslip.earnings?.basic} />
-        <Row label="HRA" value={payslip.earnings?.hra} />
+      {/* ================= Attendance Impact ================= */}
+      <section className="rounded-md border p-4 space-y-2 text-sm">
+        <h3 className="font-semibold">Attendance Summary</h3>
+
         <Row
-          label="Other Allowances"
-          value={payslip.earnings?.allowances}
+          label="Total Working Days"
+          value={total_working_days}
         />
+
         <Row
-          label="Total Earnings"
-          value={payslip.earnings?.gross}
+          label="Present Days"
+          value={present_days}
         />
+
         <Row
-          label="Total Deductions"
-          value={payslip.deductions?.total}
+          label="Paid Leave"
+          value={paid_leave_days}
+        />
+
+        <Row
+          label="Unpaid Leave (LOP)"
+          value={unpaid_leave_days}
+          highlight={unpaid_leave_days > 0}
+        />
+
+        <Row
+          label="Payable Days"
+          value={`${payable_days} / ${total_working_days}`}
+          strong
         />
       </section>
 
-      {/* Net Pay */}
-      <div className="rounded-md border bg-muted/20 p-4">
-        <Row
-          label="Net Pay"
-          value={payslip.net_pay}
-          strong
-          large
-        />
-      </div>
+      {/* ================= Salary ================= */}
+      <section className="rounded-md border p-4 space-y-2 text-sm">
+        <h3 className="font-semibold">Salary</h3>
 
-      {/* Footer */}
+        <Row
+          label="Contractual Gross"
+          value={formatMoney(gross)}
+        />
+
+        {isProrated && (
+          <Row
+            label="Prorated Gross"
+            value={formatMoney(prorated_gross)}
+            highlight
+          />
+        )}
+
+        <div className="mt-3 rounded-md bg-muted/30 p-3">
+          <Row
+            label="Net Pay"
+            value={formatMoney(net_pay)}
+            strong
+            large
+          />
+        </div>
+      </section>
+
+      {/* ================= Footer ================= */}
       <footer className="text-xs text-muted-foreground">
         Generated on{" "}
-        {format(new Date(payslip.generated_at), "dd MMM yyyy")}
+        {generated_at
+          ? format(new Date(generated_at), "dd MMM yyyy")
+          : "—"}
         . This document is system-generated and audit-locked.
       </footer>
     </div>
   );
 }
 
-/* ----------------------------
+/* =========================================================
  | Helpers
- |----------------------------*/
-function Row({ label, value, strong, large }) {
+ |========================================================= */
+function Row({
+  label,
+  value,
+  strong = false,
+  large = false,
+  highlight = false,
+}) {
   return (
     <div className="flex justify-between">
-      <span className="text-muted-foreground">{label}</span>
+      <span className="text-muted-foreground">
+        {label}
+      </span>
+
       <span
         className={[
           strong ? "font-semibold" : "",
           large ? "text-base" : "",
+          highlight ? "text-red-600" : "",
         ].join(" ")}
       >
         {value ?? "—"}
       </span>
     </div>
   );
+}
+
+function formatMoney(value) {
+  if (typeof value !== "number") return "—";
+  return `₹${value.toLocaleString("en-IN")}`;
 }

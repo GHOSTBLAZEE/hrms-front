@@ -17,25 +17,36 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 
-import { useAuth } from "@/hooks/useAuth";
-import { useLeaves } from "@/hooks/useLeaves";
+
 import { useLeavePreview } from "../../employees/[employeeId]/hooks/useLeavePreview";
 import { useLeaveTypesRead } from "../hooks/useLeaveTypesRead";
+import { useLeaveActions } from "@/hooks/useLeaves";
 
+/* =========================================================
+ | Apply Leave Dialog
+ |========================================================= */
 export default function ApplyLeaveDialog({ open, onClose }) {
-  const { user } = useAuth();
-  const { apply } = useLeaves();
-  const { data: leaveTypes, isLoading: loadingTypes } = useLeaveTypesRead();
+  const { apply } = useLeaveActions();
+  const { data: leaveTypes, isLoading: loadingTypes } =
+    useLeaveTypesRead();
 
   const [leaveTypeId, setLeaveTypeId] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [ackUnpaid, setAckUnpaid] = useState(false);
 
-  const { mutate: preview, data: impact } = useLeavePreview();
+  const { mutate: preview, data: impact } =
+    useLeavePreview();
 
-  /* ------------------------------------------------------------
-   | Impact preview (READ-ONLY)
-   |------------------------------------------------------------ */
+  const selectedType = leaveTypes?.find(
+    (t) => String(t.id) === String(leaveTypeId)
+  );
+
+  const isUnpaidLeave = selectedType?.is_paid === false;
+
+  /* ---------------------------------------------------------
+   | Impact Preview (READ-ONLY)
+   |-------------------------------------------------------- */
   useEffect(() => {
     if (leaveTypeId && startDate && endDate) {
       preview({
@@ -46,9 +57,9 @@ export default function ApplyLeaveDialog({ open, onClose }) {
     }
   }, [leaveTypeId, startDate, endDate]);
 
-  /* ------------------------------------------------------------
+  /* ---------------------------------------------------------
    | Submit
-   |------------------------------------------------------------ */
+   |-------------------------------------------------------- */
   function submit() {
     apply.mutate(
       {
@@ -57,11 +68,24 @@ export default function ApplyLeaveDialog({ open, onClose }) {
         end_date: endDate,
       },
       {
-        onSuccess: () => onClose(),
+        onSuccess: () => {
+          reset();
+          onClose();
+        },
       }
     );
   }
 
+  function reset() {
+    setLeaveTypeId("");
+    setStartDate("");
+    setEndDate("");
+    setAckUnpaid(false);
+  }
+
+  /* ---------------------------------------------------------
+   | Render
+   |-------------------------------------------------------- */
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-md">
@@ -78,7 +102,10 @@ export default function ApplyLeaveDialog({ open, onClose }) {
 
             <Select
               value={leaveTypeId}
-              onValueChange={setLeaveTypeId}
+              onValueChange={(v) => {
+                setLeaveTypeId(v);
+                setAckUnpaid(false);
+              }}
               disabled={loadingTypes}
             >
               <SelectTrigger>
@@ -87,7 +114,10 @@ export default function ApplyLeaveDialog({ open, onClose }) {
 
               <SelectContent>
                 {leaveTypes?.map((t) => (
-                  <SelectItem key={t.id} value={String(t.id)}>
+                  <SelectItem
+                    key={t.id}
+                    value={String(t.id)}
+                  >
                     {t.name} ({t.code})
                   </SelectItem>
                 ))}
@@ -103,7 +133,9 @@ export default function ApplyLeaveDialog({ open, onClose }) {
             <Input
               type="date"
               value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
+              onChange={(e) =>
+                setStartDate(e.target.value)
+              }
             />
           </div>
 
@@ -114,11 +146,13 @@ export default function ApplyLeaveDialog({ open, onClose }) {
             <Input
               type="date"
               value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
+              onChange={(e) =>
+                setEndDate(e.target.value)
+              }
             />
           </div>
 
-          {/* 🔮 Impact Preview */}
+          {/* 🔮 Balance Preview */}
           {impact && (
             <div
               className={`text-sm ${
@@ -129,13 +163,44 @@ export default function ApplyLeaveDialog({ open, onClose }) {
             >
               {impact.allowed ? (
                 <>
-                  After approval, you’ll have{" "}
-                  <strong>{impact.available_after}</strong>{" "}
-                  days remaining.
+                  After approval, remaining balance:{" "}
+                  <strong>
+                    {impact.available_after}
+                  </strong>{" "}
+                  days
                 </>
               ) : (
-                impact.message
+                impact.message ??
+                "Insufficient leave balance"
               )}
+            </div>
+          )}
+
+          {/* 🚨 Unpaid Leave Warning */}
+          {isUnpaidLeave && (
+            <div className="rounded-md border border-red-200 bg-red-50 p-3 text-xs text-red-700">
+              <div className="font-medium mb-1">
+                Unpaid Leave (Loss of Pay)
+              </div>
+              <div>
+                This leave is <strong>unpaid</strong>. Approved
+                days will reduce your salary in payroll.
+              </div>
+
+              <label className="mt-2 flex items-start gap-2">
+                <input
+                  type="checkbox"
+                  className="mt-0.5"
+                  checked={ackUnpaid}
+                  onChange={(e) =>
+                    setAckUnpaid(e.target.checked)
+                  }
+                />
+                <span>
+                  I understand that this leave will
+                  reduce my salary
+                </span>
+              </label>
             </div>
           )}
 
@@ -152,7 +217,8 @@ export default function ApplyLeaveDialog({ open, onClose }) {
                 !leaveTypeId ||
                 !startDate ||
                 !endDate ||
-                (impact && !impact.allowed)
+                (impact && !impact.allowed) ||
+                (isUnpaidLeave && !ackUnpaid)
               }
             >
               Apply Leave
