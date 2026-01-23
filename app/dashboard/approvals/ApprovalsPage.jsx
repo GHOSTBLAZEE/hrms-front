@@ -45,22 +45,18 @@ export default function ApprovalsPage({
   /* -------------------------------
    | Data
    |--------------------------------*/
-  const { data = [], isLoading } = useApprovals({
-    status,
-    type,
-  });
-console.log(data);
+  const { data = [] ,isLoading} = useApprovals({ status: "all", type });
 
-  const pending = useApprovals({ status: "pending", type });
-  const approved = useApprovals({ status: "approved", type });
-  const rejected = useApprovals({ status: "rejected", type });
+  const pending = useApprovals({ status: "pending", type: "all" });
+const approved = useApprovals({ status: "approved", type: "all" });
+const rejected = useApprovals({ status: "rejected", type: "all" });
+
 
   const counts = {
-    pending: pending.data?.length ?? 0,
-    approved: approved.data?.length ?? 0,
-    rejected: rejected.data?.length ?? 0,
-  };
-
+  pending: data.filter(d => d.status === "pending").length,
+  approved: data.filter(d => d.status === "approved").length,
+  rejected: data.filter(d => d.status === "rejected").length,
+};
   /* -------------------------------
    | Actions
    |--------------------------------*/
@@ -70,24 +66,28 @@ console.log(data);
     approve.isLoading || reject.isLoading;
 
   const bulkApprove = async () => {
+      for (const item of data) {
+        if (
+          selected.includes(item.id) &&
+          item.status === "pending"
+        ) {
+          await approve.mutateAsync({
+            type: item.type,
+            id: item.id,
+          });
+        }
+      }
+      setSelected([]);
+    };
+
+
+
+  const bulkRejectConfirm = async (reason) => {
     for (const item of data) {
       if (
         selected.includes(item.id) &&
         item.status === "pending"
       ) {
-        await approve.mutateAsync({
-          type: item.type,
-          id: item.id,
-        });
-      }
-    }
-    setSelected([]);
-  };
-
-
-  const bulkRejectConfirm = async (reason) => {
-    for (const item of data) {
-      if (selected.includes(item.id)) {
         await reject.mutateAsync({
           type: item.type,
           id: item.id,
@@ -98,6 +98,7 @@ console.log(data);
     setSelected([]);
     setOpenBulkReject(false);
   };
+
 
   return (
     <div className="p-6 space-y-6">
@@ -122,12 +123,15 @@ console.log(data);
       </div>
 
       {/* 🔥 Bulk action bar */}
-      <BulkApprovalBar
-        count={selected.length}
-        onApprove={bulkApprove}
-        onReject={() => setOpenBulkReject(true)}
-        disabled={isActionLoading}
-      />
+      {status === "pending" && (
+        <BulkApprovalBar
+          count={selected.length}
+          onApprove={bulkApprove}
+          onReject={() => setOpenBulkReject(true)}
+          disabled={isActionLoading}
+        />
+      )}
+
 
       {isLoading ? (
         <div className="text-sm text-muted-foreground">
@@ -142,7 +146,7 @@ console.log(data);
           selectable
           selected={selected}
           onSelect={setSelected}
-          globalFilterKeys={["status", "type"]}
+          globalFilterKeys={["status"]}
         />
       )}
 

@@ -24,12 +24,13 @@ export default function LeaveHistory({ employeeId }) {
       </div>
     );
   }
+console.log(data);
 
   return (
     <div className="space-y-3 text-sm">
       {data.map((leave) => {
+        const isUnpaid = leave.type?.is_paid === false;
         const isApproved = leave.status === "approved";
-        const isUnpaid = leave.is_paid === false;
 
         return (
           <div

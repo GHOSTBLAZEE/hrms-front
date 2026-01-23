@@ -158,35 +158,45 @@ export const menu = {
 
   /* ================= SETTINGS ================= */
   settings: [
-    {
-      title: "Companies",
-      url: "/dashboard/settings/companies",
-      icon: Building2,
-      permissions: ["manage companies"],
-    },
-    {
-      title: "Locations",
-      url: "/dashboard/settings/locations",
-      icon: MapPin,
-      permissions: ["manage locations"],
-    },
-    {
-      title: "Departments",
-      url: "/dashboard/settings/departments",
-      icon: Layers,
-      permissions: ["manage departments"],
-    },
-    {
-      title: "Designations",
-      url: "/dashboard/settings/designations",
-      icon: Briefcase,
-      permissions: ["manage designations"],
-    },
-    {
-      title: "Roles & Permissions",
-      url: "/dashboard/settings/roles",
-      icon: ShieldCheck,
-      permissions: ["manage roles", "manage permissions"],
-    },
-  ],
+  {
+    title: "Companies",
+    url: "/dashboard/settings/companies",
+    icon: Building2,
+    permissions: ["manage companies"],
+  },
+  {
+    title: "Locations",
+    url: "/dashboard/settings/locations",
+    icon: MapPin,
+    permissions: ["manage locations"],
+  },
+  {
+    title: "Departments",
+    url: "/dashboard/settings/departments",
+    icon: Layers,
+    permissions: ["manage departments"],
+  },
+  {
+    title: "Designations",
+    url: "/dashboard/settings/designations",
+    icon: Briefcase,
+    permissions: ["manage designations"],
+  },
+
+  /* ✅ ADD THIS */
+  {
+    title: "Leave Types",
+    url: "/dashboard/settings/leave-types",
+    icon: Plane,
+    permissions: ["manage leave types"],
+  },
+
+  {
+    title: "Roles & Permissions",
+    url: "/dashboard/settings/roles",
+    icon: ShieldCheck,
+    permissions: ["manage roles", "manage permissions"],
+  },
+],
+
 };

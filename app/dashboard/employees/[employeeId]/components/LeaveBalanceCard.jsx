@@ -1,3 +1,5 @@
+"use client";
+
 import {
   Card,
   CardHeader,
@@ -9,30 +11,43 @@ export default function LeaveBalanceCard({ balance }) {
   const {
     name,
     code,
-    entitled,
-    accrued,
-    used,
-    pending,
-    available,
+    accrued = 0,
+    used = 0,
+    pending = 0,
+    available = 0,
     allow_half_day,
+    is_paid = true,
+    annual_limit,
   } = balance;
-  
-const barColor =
-  used > entitled ? "bg-red-600" : "bg-blue-600";
+
+  const showProgress =
+    is_paid && typeof annual_limit === "number";
+
+  const percent =
+    showProgress && annual_limit > 0
+      ? Math.min((used / annual_limit) * 100, 100)
+      : 0;
 
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm">
-          {name}{" "}
-          <span className="text-muted-foreground">
-            ({code})
+        <CardTitle className="text-sm flex justify-between items-center">
+          <span>
+            {name}{" "}
+            <span className="text-muted-foreground">
+              ({code})
+            </span>
           </span>
+
+          {!is_paid && (
+            <span className="text-xs rounded bg-red-100 text-red-700 px-2 py-0.5">
+              Unpaid (LOP)
+            </span>
+          )}
         </CardTitle>
       </CardHeader>
 
       <CardContent className="space-y-2 text-sm">
-        <Row label="Entitled" value={entitled} />
         <Row label="Accrued" value={accrued} />
         <Row label="Used" value={used} />
         <Row label="Pending" value={pending} />
@@ -42,20 +57,36 @@ const barColor =
           highlight
         />
 
-        <ProgressBar
-          used={used}
-          entitled={entitled}
-        />
-
-        {allow_half_day && (
-          <div className="text-xs text-muted-foreground">
-            Half-day allowed
-          </div>
+        {/* Progress */}
+        {showProgress && (
+          <ProgressBar
+            percent={percent}
+            used={used}
+            limit={annual_limit}
+          />
         )}
+
+        {/* Rules */}
+        <div className="text-xs text-muted-foreground space-y-1 pt-1">
+          {allow_half_day && <div>✔ Half-day allowed</div>}
+
+          {!is_paid && (
+            <div className="text-red-600">
+              ⚠ This leave reduces salary in payroll
+            </div>
+          )}
+
+          {pending > 0 && (
+            <div>
+              ⏳ Pending leaves not yet deducted
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   );
 }
+
 function Row({ label, value, highlight }) {
   return (
     <div className="flex justify-between">
@@ -67,20 +98,13 @@ function Row({ label, value, highlight }) {
             : "font-medium"
         }
       >
-        {Number.isInteger(Number(value))
-          ? value
-          : Number(value).toString()}
+        {Number(value) || 0}
       </span>
     </div>
   );
 }
 
-function ProgressBar({ used, entitled }) {
-  const percent =
-    entitled > 0
-      ? Math.min((used / entitled) * 100, 100)
-      : 0;
-
+function ProgressBar({ percent, used, limit }) {
   return (
     <div className="pt-2">
       <div className="h-1.5 bg-muted rounded overflow-hidden">
@@ -91,7 +115,7 @@ function ProgressBar({ used, entitled }) {
       </div>
 
       <div className="text-xs text-muted-foreground mt-1">
-        {used} of {entitled} used
+        {used} of {limit} used
       </div>
     </div>
   );

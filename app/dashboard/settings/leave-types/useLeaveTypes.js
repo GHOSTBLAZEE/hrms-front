@@ -1,29 +1,35 @@
-"use client";
-
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { handleApiError } from "@/lib/handleApiError";
 import { leaveApi } from "@/lib/leaveApi";
 
-export function useLeaveTypes() {
+export function useLeaveTypes({ includeInactive = false } = {}) {
   const qc = useQueryClient();
 
   const list = useQuery({
-    queryKey: ["leave-types"],
-    queryFn: () => leaveApi.listTypes().then(r => r.data),
+    queryKey: ["leave-types", { includeInactive }],
+    queryFn: () =>
+      leaveApi.listTypes({ includeInactive }),
   });
+
+  const invalidate = () =>
+    qc.invalidateQueries({ queryKey: ["leave-types"] });
 
   const create = useMutation({
     mutationFn: leaveApi.createType,
-    onSuccess: () => qc.invalidateQueries(["leave-types"]),
+    onSuccess: invalidate,
+    onError: handleApiError,
   });
 
   const update = useMutation({
     mutationFn: leaveApi.updateType,
-    onSuccess: () => qc.invalidateQueries(["leave-types"]),
+    onSuccess: invalidate,
+    onError: handleApiError,
   });
 
   const remove = useMutation({
     mutationFn: leaveApi.deleteType,
-    onSuccess: () => qc.invalidateQueries(["leave-types"]),
+    onSuccess: invalidate,
+    onError: handleApiError,
   });
 
   return { list, create, update, remove };

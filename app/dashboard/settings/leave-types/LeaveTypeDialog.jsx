@@ -27,21 +27,18 @@ export default function LeaveTypeDialog({
   onClose,
   initialData = null,
 }) {
-  const { create } = useLeaveTypes();
+  const { create, update } = useLeaveTypes();
   const isVersion = !!initialData;
 
   const [form, setForm] = useState(EMPTY_FORM);
   const [error, setError] = useState("");
 
-  /* ---------------------------------------------------------
-   | Sync form when editing / versioning
-   |-------------------------------------------------------- */
   useEffect(() => {
     if (initialData) {
       setForm({
         name: initialData.name ?? "",
         code: initialData.code ?? "",
-        is_paid: initialData.is_paid ?? true,
+        is_paid: initialData.is_paid,
         requires_approval: initialData.requires_approval ?? true,
         accrual_rate: initialData.accrual_rate ?? "",
         annual_limit: initialData.annual_limit ?? "",
@@ -54,13 +51,9 @@ export default function LeaveTypeDialog({
     setError("");
   }, [initialData, open]);
 
-  /* ---------------------------------------------------------
-   | Submit
-   |-------------------------------------------------------- */
   function submit() {
     setError("");
 
-    // 🔒 Enterprise validation
     if (form.is_paid) {
       if (!form.accrual_rate || !form.annual_limit) {
         setError(
@@ -70,20 +63,25 @@ export default function LeaveTypeDialog({
       }
     }
 
-    create.mutate(
-      {
-        name: form.name.trim(),
-        code: form.code.trim(),
-        is_paid: form.is_paid,
-        requires_approval: form.requires_approval,
-        allow_half_day: form.allow_half_day,
-        accrual_rate: form.is_paid
-          ? Number(form.accrual_rate)
-          : null,
-        annual_limit: form.is_paid
-          ? Number(form.annual_limit)
-          : null,
-      },
+    const payload = {
+      name: form.name.trim(),
+      code: form.code.trim(),
+      requires_approval: form.requires_approval,
+      allow_half_day: form.allow_half_day,
+      accrual_rate: form.is_paid
+        ? Number(form.accrual_rate)
+        : null,
+      annual_limit: form.is_paid
+        ? Number(form.annual_limit)
+        : null,
+    };
+
+    const mutation = isVersion ? update : create;
+
+    mutation.mutate(
+      isVersion
+        ? { id: initialData.id, ...payload }
+        : { ...payload, is_paid: form.is_paid },
       {
         onSuccess: () => {
           setForm(EMPTY_FORM);
@@ -93,9 +91,6 @@ export default function LeaveTypeDialog({
     );
   }
 
-  /* ---------------------------------------------------------
-   | Render
-   |-------------------------------------------------------- */
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent>
@@ -108,7 +103,6 @@ export default function LeaveTypeDialog({
         </DialogHeader>
 
         <div className="space-y-4 text-sm">
-          {/* Name */}
           <Input
             placeholder="Name (e.g. Casual Leave)"
             value={form.name}
@@ -117,7 +111,6 @@ export default function LeaveTypeDialog({
             }
           />
 
-          {/* Code */}
           <Input
             placeholder="Code (e.g. CL)"
             value={form.code}
@@ -126,39 +119,29 @@ export default function LeaveTypeDialog({
             }
           />
 
-          {/* Paid Leave (IMMUTABLE on version) */}
           <label className="flex justify-between items-center">
             Paid Leave
             <Switch
               checked={form.is_paid}
               disabled={isVersion}
               onCheckedChange={(v) =>
-                !isVersion &&
-                setForm({
-                  ...form,
-                  is_paid: v,
-                  accrual_rate: "",
-                  annual_limit: "",
-                })
+                setForm({ ...form, is_paid: v })
               }
             />
           </label>
 
-          {isVersion && (
-            <p className="text-xs text-muted-foreground">
-              Paid / unpaid status is immutable. A new version
-              preserves payroll history.
-            </p>
-          )}
 
-          {/* Paid Leave Rules */}
+          <p className="text-xs text-muted-foreground">
+            Paid / unpaid cannot be changed once created.
+          </p>
+
           {form.is_paid && (
             <>
               <Input
                 type="number"
                 min="0"
                 step="0.5"
-                placeholder="Accrual rate (days per month)"
+                placeholder="Accrual rate (days / month)"
                 value={form.accrual_rate}
                 onChange={(e) =>
                   setForm({
@@ -187,17 +170,13 @@ export default function LeaveTypeDialog({
                 <Switch
                   checked={form.allow_half_day}
                   onCheckedChange={(v) =>
-                    setForm({
-                      ...form,
-                      allow_half_day: v,
-                    })
+                    setForm({ ...form, allow_half_day: v })
                   }
                 />
               </label>
             </>
           )}
 
-          {/* Approval */}
           <label className="flex justify-between items-center">
             Requires Approval
             <Switch
@@ -211,14 +190,12 @@ export default function LeaveTypeDialog({
             />
           </label>
 
-          {/* Validation error */}
           {error && (
             <div className="text-xs text-red-600">
               {error}
             </div>
           )}
 
-          {/* Actions */}
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={onClose}>
               Cancel

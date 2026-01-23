@@ -1,18 +1,30 @@
 "use client";
 
+import { useMyLeaveBalances } from "@/app/dashboard/leaves/hooks/useMyLeaveBalances";
 import { useEmployeeLeaveBalances } from "../hooks/useEmployeeLeaveBalances";
+
+
 import LeaveBalanceCard from "./LeaveBalanceCard";
 import LeaveBalanceSkeleton from "./LeaveBalanceSkeleton";
 
+/**
+ * LeaveBalanceCards
+ *
+ * Admin usage:  <LeaveBalanceCards employeeId={id} />
+ * Employee usage: <LeaveBalanceCards />
+ */
 export default function LeaveBalanceCards({ employeeId }) {
-  const { data, isLoading } =
-    useEmployeeLeaveBalances(employeeId);
+  const query = employeeId
+    ? useEmployeeLeaveBalances(employeeId) // ADMIN / HR
+    : useMyLeaveBalances();                // EMPLOYEE SELF
 
-  if (isLoading) {
-    return <LeaveBalanceSkeleton />;
-  }
+  const { data, isLoading } = query;
 
-  if (!data?.balances?.length) {
+  if (isLoading) return <LeaveBalanceSkeleton />;
+
+  const balances = data?.balances ?? [];
+
+  if (!balances.length) {
     return (
       <div className="text-sm text-muted-foreground">
         No leave balances available.
@@ -22,7 +34,7 @@ export default function LeaveBalanceCards({ employeeId }) {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      {data.balances.map((balance) => (
+      {balances.map((balance) => (
         <LeaveBalanceCard
           key={balance.leave_type_id}
           balance={balance}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -17,49 +17,65 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 
-
-import { useLeavePreview } from "../../employees/[employeeId]/hooks/useLeavePreview";
+import { useLeavePreview } from "../hooks/useLeavePreview";
 import { useLeaveTypesRead } from "../hooks/useLeaveTypesRead";
 import { useLeaveActions } from "@/hooks/useLeaves";
 
-/* =========================================================
- | Apply Leave Dialog
- |========================================================= */
 export default function ApplyLeaveDialog({ open, onClose }) {
   const { apply } = useLeaveActions();
-  const { data: leaveTypes, isLoading: loadingTypes } =
-    useLeaveTypesRead();
+  const { data: leaveTypes, isLoading } = useLeaveTypesRead();
+
+  const {
+    mutate: preview,
+    data: impact,
+    error: previewError,
+    isError: isPreviewError,
+    isPending: isPreviewLoading,
+  } = useLeavePreview();
 
   const [leaveTypeId, setLeaveTypeId] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [ackUnpaid, setAckUnpaid] = useState(false);
 
-  const { mutate: preview, data: impact } =
-    useLeavePreview();
+  const leaveTypeList = leaveTypes?.data ?? [];
 
-  const selectedType = leaveTypes?.find(
-    (t) => String(t.id) === String(leaveTypeId)
+  /* ---------------- Derived ---------------- */
+  const selectedType = useMemo(
+    () =>
+      leaveTypeList.find(
+        (t) => String(t.id) === String(leaveTypeId)
+      ),
+    [leaveTypeId, leaveTypeList]
   );
 
   const isUnpaidLeave = selectedType?.is_paid === false;
 
-  /* ---------------------------------------------------------
-   | Impact Preview (READ-ONLY)
-   |-------------------------------------------------------- */
-  useEffect(() => {
-    if (leaveTypeId && startDate && endDate) {
-      preview({
-        leave_type_id: leaveTypeId,
-        start_date: startDate,
-        end_date: endDate,
-      });
-    }
-  }, [leaveTypeId, startDate, endDate]);
+  const canPreview =
+    open && leaveTypeId && startDate && endDate;
 
-  /* ---------------------------------------------------------
-   | Submit
-   |-------------------------------------------------------- */
+  /* ---------------- Preview ---------------- */
+  useEffect(() => {
+    if (!canPreview) return;
+
+    preview({
+      leave_type_id: leaveTypeId,
+      start_date: startDate,
+      end_date: endDate,
+    });
+  }, [canPreview, leaveTypeId, startDate, endDate, preview]);
+
+  /* ---------------- Reset ---------------- */
+  useEffect(() => {
+    if (!open) {
+      setLeaveTypeId("");
+      setStartDate("");
+      setEndDate("");
+      setAckUnpaid(false);
+    }
+  }, [open]);
+
+  /* ---------------- Submit ---------------- */
   function submit() {
     apply.mutate(
       {
@@ -68,24 +84,28 @@ export default function ApplyLeaveDialog({ open, onClose }) {
         end_date: endDate,
       },
       {
-        onSuccess: () => {
-          reset();
-          onClose();
+        onSuccess: onClose,
+        onError: (err) => {
+          alert(
+            err?.response?.data?.message ??
+              "Unable to apply leave"
+          );
         },
       }
     );
   }
 
-  function reset() {
-    setLeaveTypeId("");
-    setStartDate("");
-    setEndDate("");
-    setAckUnpaid(false);
-  }
+  const disableApply =
+    apply.isLoading ||
+    isPreviewLoading ||
+    !leaveTypeId ||
+    !startDate ||
+    !endDate ||
+    isPreviewError || // ✅ BLOCK overlap
+    (impact && !impact.allowed) ||
+    (isUnpaidLeave && !ackUnpaid);
 
-  /* ---------------------------------------------------------
-   | Render
-   |-------------------------------------------------------- */
+  /* ---------------- Render ---------------- */
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-md">
@@ -95,65 +115,48 @@ export default function ApplyLeaveDialog({ open, onClose }) {
 
         <div className="space-y-4 text-sm">
           {/* Leave Type */}
-          <div>
-            <label className="block mb-1 text-muted-foreground">
-              Leave Type
-            </label>
-
-            <Select
-              value={leaveTypeId}
-              onValueChange={(v) => {
-                setLeaveTypeId(v);
-                setAckUnpaid(false);
-              }}
-              disabled={loadingTypes}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select leave type" />
-              </SelectTrigger>
-
-              <SelectContent>
-                {leaveTypes?.map((t) => (
-                  <SelectItem
-                    key={t.id}
-                    value={String(t.id)}
-                  >
-                    {t.name} ({t.code})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <Select
+            value={leaveTypeId}
+            onValueChange={(v) => {
+              setLeaveTypeId(v);
+              setAckUnpaid(false);
+            }}
+            disabled={isLoading}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select leave type" />
+            </SelectTrigger>
+            <SelectContent>
+              {leaveTypeList.map((t) => (
+                <SelectItem key={t.id} value={String(t.id)}>
+                  {t.name} ({t.code})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
           {/* Dates */}
-          <div>
-            <label className="block mb-1 text-muted-foreground">
-              Start Date
-            </label>
-            <Input
-              type="date"
-              value={startDate}
-              onChange={(e) =>
-                setStartDate(e.target.value)
-              }
-            />
-          </div>
+          <Input
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+          />
+          <Input
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+          />
 
-          <div>
-            <label className="block mb-1 text-muted-foreground">
-              End Date
-            </label>
-            <Input
-              type="date"
-              value={endDate}
-              onChange={(e) =>
-                setEndDate(e.target.value)
-              }
-            />
-          </div>
+          {/* 🔴 Overlap / business-rule error */}
+          {isPreviewError && (
+            <div className="text-sm text-red-600">
+              {previewError?.response?.data?.message ??
+                "Leave not allowed for selected dates"}
+            </div>
+          )}
 
           {/* 🔮 Balance Preview */}
-          {impact && (
+          {!isPreviewError && impact && (
             <div
               className={`text-sm ${
                 impact.allowed
@@ -162,65 +165,29 @@ export default function ApplyLeaveDialog({ open, onClose }) {
               }`}
             >
               {impact.allowed ? (
-                <>
-                  After approval, remaining balance:{" "}
-                  <strong>
-                    {impact.available_after}
-                  </strong>{" "}
-                  days
-                </>
+                impact.available_after !== null ? (
+                  <>
+                    Remaining balance after approval:{" "}
+                    <strong>{impact.available_after}</strong>{" "}
+                    days
+                  </>
+                ) : (
+                  <>This leave will be unpaid (LOP)</>
+                )
               ) : (
-                impact.message ??
                 "Insufficient leave balance"
               )}
             </div>
           )}
 
-          {/* 🚨 Unpaid Leave Warning */}
-          {isUnpaidLeave && (
-            <div className="rounded-md border border-red-200 bg-red-50 p-3 text-xs text-red-700">
-              <div className="font-medium mb-1">
-                Unpaid Leave (Loss of Pay)
-              </div>
-              <div>
-                This leave is <strong>unpaid</strong>. Approved
-                days will reduce your salary in payroll.
-              </div>
-
-              <label className="mt-2 flex items-start gap-2">
-                <input
-                  type="checkbox"
-                  className="mt-0.5"
-                  checked={ackUnpaid}
-                  onChange={(e) =>
-                    setAckUnpaid(e.target.checked)
-                  }
-                />
-                <span>
-                  I understand that this leave will
-                  reduce my salary
-                </span>
-              </label>
-            </div>
-          )}
+          {/* Unpaid Leave Warning */} {isUnpaidLeave && ( <div className="rounded-md border border-red-200 bg-red-50 p-3 text-xs text-red-700"> <div className="font-medium mb-1"> Unpaid Leave (Loss of Pay) </div> <div> This leave is <strong>unpaid</strong>. Approved days will reduce salary in payroll. </div> <label className="mt-2 flex gap-2"> <input type="checkbox" checked={ackUnpaid} onChange={(e) => setAckUnpaid(e.target.checked) } /> <span> I understand the salary deduction </span> </label> </div> )}
 
           {/* Actions */}
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={onClose}>
               Cancel
             </Button>
-
-            <Button
-              onClick={submit}
-              disabled={
-                apply.isLoading ||
-                !leaveTypeId ||
-                !startDate ||
-                !endDate ||
-                (impact && !impact.allowed) ||
-                (isUnpaidLeave && !ackUnpaid)
-              }
-            >
+            <Button onClick={submit} disabled={disableApply}>
               Apply Leave
             </Button>
           </div>
