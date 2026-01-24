@@ -45,18 +45,18 @@ export default function ApprovalsPage({
   /* -------------------------------
    | Data
    |--------------------------------*/
-  const { data = [] ,isLoading} = useApprovals({ status: "all", type });
+  const { data = [], isLoading } = useApprovals({ status, type });
 
-  const pending = useApprovals({ status: "pending", type: "all" });
-const approved = useApprovals({ status: "approved", type: "all" });
-const rejected = useApprovals({ status: "rejected", type: "all" });
-
+  const pendingQ = useApprovals({ status: "pending", type });
+  const approvedQ = useApprovals({ status: "approved", type });
+  const rejectedQ = useApprovals({ status: "rejected", type });
 
   const counts = {
-  pending: data.filter(d => d.status === "pending").length,
-  approved: data.filter(d => d.status === "approved").length,
-  rejected: data.filter(d => d.status === "rejected").length,
-};
+    pending: pendingQ.data?.length ?? 0,
+    approved: approvedQ.data?.length ?? 0,
+    rejected: rejectedQ.data?.length ?? 0,
+  };
+
   /* -------------------------------
    | Actions
    |--------------------------------*/

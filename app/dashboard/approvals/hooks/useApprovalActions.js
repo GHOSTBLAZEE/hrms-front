@@ -26,6 +26,8 @@ export function useApprovalActions() {
   },
   onSuccess: () => {
     qc.invalidateQueries({ queryKey: ["approvals"] });
+    qc.invalidateQueries({ queryKey: ["leaves"] });
+    qc.invalidateQueries({ queryKey: ["leave-balances"] });
   },
 });
 
@@ -60,6 +62,8 @@ export function useApprovalActions() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["approvals"] });
+      qc.invalidateQueries({ queryKey: ["leaves"] });
+      qc.invalidateQueries({ queryKey: ["leave-balances"] });
     },
   });
 

@@ -4,9 +4,11 @@ import apiClient from "@/lib/apiClient";
 /**
  * Normalize leave approvals
  */
-function normalizeLeave(leave) {
+function normalizeLeave(approval) {
+  const leave = approval.approvable;
+
   return {
-    id: leave.id,
+    id: approval.id,               // ✅ approval id
     type: "leave",
     title: "Leave Request",
     employee: {
@@ -14,13 +16,14 @@ function normalizeLeave(leave) {
       name: leave.employee.user.name,
       employee_code: leave.employee.employee_code,
     },
-    submitted_at: leave.created_at,
-    status: leave.status,
+    submitted_at: approval.created_at,
+    status: approval.status,
     action_url: `/dashboard/leaves/${leave.id}`,
     audit_url: `/dashboard/reports/audit_logs?entity=leave&entity_id=${leave.id}`,
-    meta: leave,
+    meta: approval,
   };
 }
+
 
 /**
  * Normalize attendance correction approvals
@@ -74,10 +77,12 @@ export function useApprovals({ status = "pending", type = "all" }) {
           "/api/v1/leaves/approvals",
           { params: { status } }
         );
+console.log(leaveRes);
 
-        leaveRes.data.forEach((leave) => {
-          requests.push(normalizeLeave(leave));
+        leaveRes.data.forEach((approval) => {
+          requests.push(normalizeLeave(approval));
         });
+
       }
 
       // Fetch attendance correction approvals
