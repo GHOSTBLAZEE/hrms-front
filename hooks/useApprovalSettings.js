@@ -18,14 +18,16 @@ export function useUpdateApprovalSettings() {
   const qc = useQueryClient();
 
   return useMutation({
-    mutationFn: async (minutes) => {
-      return apiClient.put(
+    mutationFn: async (payload) => {
+      const res = await apiClient.put(
         "/api/v1/company/approval-settings",
-        { approval_reminder_minutes: minutes }
+        payload
       );
+      return res.data;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["approval-settings"] });
     },
   });
 }
+

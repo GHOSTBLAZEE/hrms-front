@@ -36,6 +36,8 @@ export const menu = {
       icon: ClipboardList,
       permissions: [
         "approve leave",
+        "approve attendance correction",
+        "approve unlock attendance", // ✅ FIXED
       ],
     },
 
@@ -63,7 +65,7 @@ export const menu = {
           title: "Corrections",
           url: "/dashboard/attendance/corrections",
           permissions: [
-            "view attendance corrections",
+            "view attendance",
             "approve attendance correction",
           ],
         },
@@ -158,45 +160,47 @@ export const menu = {
 
   /* ================= SETTINGS ================= */
   settings: [
-  {
-    title: "Companies",
-    url: "/dashboard/settings/companies",
-    icon: Building2,
-    permissions: ["manage companies"],
-  },
-  {
-    title: "Locations",
-    url: "/dashboard/settings/locations",
-    icon: MapPin,
-    permissions: ["manage locations"],
-  },
-  {
-    title: "Departments",
-    url: "/dashboard/settings/departments",
-    icon: Layers,
-    permissions: ["manage departments"],
-  },
-  {
-    title: "Designations",
-    url: "/dashboard/settings/designations",
-    icon: Briefcase,
-    permissions: ["manage designations"],
-  },
-
-  /* ✅ ADD THIS */
-  {
-    title: "Leave Types",
-    url: "/dashboard/settings/leave-types",
-    icon: Plane,
-    permissions: ["manage leave types"],
-  },
-
-  {
-    title: "Roles & Permissions",
-    url: "/dashboard/settings/roles",
-    icon: ShieldCheck,
-    permissions: ["manage roles", "manage permissions"],
-  },
-],
-
+    {
+      title: "Companies",
+      url: "/dashboard/settings/companies",
+      icon: Building2,
+      permissions: ["manage companies"],
+    },
+    {
+      title: "Locations",
+      url: "/dashboard/settings/locations",
+      icon: MapPin,
+      permissions: ["manage locations"],
+    },
+    {
+      title: "Departments",
+      url: "/dashboard/settings/departments",
+      icon: Layers,
+      permissions: ["manage departments"],
+    },
+    {
+      title: "Designations",
+      url: "/dashboard/settings/designations",
+      icon: Briefcase,
+      permissions: ["manage designations"],
+    },
+    {
+      title: "Leave Types",
+      url: "/dashboard/settings/leave-types",
+      icon: Plane,
+      permissions: ["manage leave types"],
+    },
+    {
+      title: "Approvals",
+      url: "/dashboard/settings/approvals",
+      icon: ClipboardList,
+      permissions: ["manage approval templates"],
+    },
+    {
+      title: "Roles & Permissions",
+      url: "/dashboard/settings/roles",
+      icon: ShieldCheck,
+      permissions: ["manage roles", "manage permissions"],
+    },
+  ],
 };
