@@ -22,15 +22,16 @@ export default function ApprovalsPage({
   const { permissions = [] } = useAuth();
 
   const [status, setStatus] = useState("pending");
-  const [type, setType] = useState(defaultType ?? "all");
   const [selected, setSelected] = useState([]);
   const [openBulkReject, setOpenBulkReject] = useState(false);
 
+  /* --------------------------------
+   | Permission guard
+   |---------------------------------*/
   const canApprove =
     permissions.includes("approve leave") ||
     permissions.includes("approve attendance correction") ||
     permissions.includes("approve unlock attendance");
-
 
   if (!canApprove) {
     return (
@@ -42,14 +43,14 @@ export default function ApprovalsPage({
     );
   }
 
-  /* -------------------------------
+  /* --------------------------------
    | Data
-   |--------------------------------*/
-  const { data = [], isLoading } = useApprovals({ status, type });
+   |---------------------------------*/
+  const { data = [], isLoading } = useApprovals({ status });
 
-  const pendingQ = useApprovals({ status: "pending", type });
-  const approvedQ = useApprovals({ status: "approved", type });
-  const rejectedQ = useApprovals({ status: "rejected", type });
+  const pendingQ = useApprovals({ status: "pending" });
+  const approvedQ = useApprovals({ status: "approved" });
+  const rejectedQ = useApprovals({ status: "rejected" });
 
   const counts = {
     pending: pendingQ.data?.length ?? 0,
@@ -57,48 +58,33 @@ export default function ApprovalsPage({
     rejected: rejectedQ.data?.length ?? 0,
   };
 
-  /* -------------------------------
+  /* --------------------------------
    | Actions
-   |--------------------------------*/
+   |---------------------------------*/
   const { approve, reject } = useApprovalActions();
 
   const isActionLoading =
     approve.isLoading || reject.isLoading;
 
+  const selectedApprovalIds = selected;
+
   const bulkApprove = async () => {
-      for (const item of data) {
-        if (
-          selected.includes(item.id) &&
-          item.status === "pending"
-        ) {
-          await approve.mutateAsync({
-            type: item.type,
-            id: item.id,
-          });
-        }
-      }
-      setSelected([]);
-    };
-
-
+    for (const approvalId of selectedApprovalIds) {
+      await approve.mutateAsync({ approvalId });
+    }
+    setSelected([]);
+  };
 
   const bulkRejectConfirm = async (reason) => {
-    for (const item of data) {
-      if (
-        selected.includes(item.id) &&
-        item.status === "pending"
-      ) {
-        await reject.mutateAsync({
-          type: item.type,
-          id: item.id,
-          reason,
-        });
-      }
+    for (const approvalId of selectedApprovalIds) {
+      await reject.mutateAsync({
+        approvalId,
+        reason,
+      });
     }
     setSelected([]);
     setOpenBulkReject(false);
   };
-
 
   return (
     <div className="p-6 space-y-6">
@@ -113,25 +99,27 @@ export default function ApprovalsPage({
           />
         )}
 
+        {/* 🔒 Module filter removed — unified inbox */}
         {!defaultType && (
           <ApprovalFilters
-            value={type}
-            onChange={setType}
+            value="all"
+            onChange={() => {}}
+            disabled
           />
         )}
-
       </div>
 
       {/* 🔥 Bulk action bar */}
       {status === "pending" && (
         <BulkApprovalBar
-          count={selected.length}
+          count={selectedApprovalIds.length}
+          disabled={isActionLoading}
+          isApproving={approve.isLoading}
+          isRejecting={reject.isLoading}
           onApprove={bulkApprove}
           onReject={() => setOpenBulkReject(true)}
-          disabled={isActionLoading}
         />
       )}
-
 
       {isLoading ? (
         <div className="text-sm text-muted-foreground">
@@ -150,8 +138,7 @@ export default function ApprovalsPage({
         />
       )}
 
-
-      {/* 🔥 Bulk reject modal */}
+      {/* 🔥 Bulk reject dialog */}
       <RejectApprovalDialog
         open={openBulkReject}
         onClose={() => setOpenBulkReject(false)}

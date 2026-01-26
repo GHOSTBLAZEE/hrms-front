@@ -1,3 +1,5 @@
+"use client";
+
 export default function ReminderEditor({ value = [], onChange }) {
   const reminder = value[0] ?? {
     after_days: 2,

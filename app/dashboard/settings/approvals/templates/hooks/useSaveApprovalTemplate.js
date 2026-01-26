@@ -1,11 +1,12 @@
-import apiClient from "@/lib/apiClient";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+"use client";
 
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import apiClient from "@/lib/apiClient";
 
 export function useSaveApprovalTemplate(module) {
-  const queryClient = useQueryClient();
+  const qc = useQueryClient();
 
-  const save = useMutation({
+  return useMutation({
     mutationFn: async (payload) => {
       const res = await apiClient.put(
         `/api/v1/approval-templates/${module}`,
@@ -14,12 +15,9 @@ export function useSaveApprovalTemplate(module) {
       return res.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(["approval-template", module]);
+      qc.invalidateQueries({
+        queryKey: ["approval-template", module],
+      });
     },
   });
-
-  return {
-    saveTemplate: save.mutate,
-    isSaving: save.isPending,
-  };
 }

@@ -1,3 +1,5 @@
+"use client";
+
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import apiClient from "@/lib/apiClient";
 
@@ -5,60 +7,29 @@ export function useApprovalActions() {
   const qc = useQueryClient();
 
   const approve = useMutation({
-  mutationFn: async ({ type, id }) => {
-    if (type === "leave") {
-      return apiClient.post(`/api/v1/leaves/${id}/approve`);
-    }
-
-    if (type === "attendance") {
-      return apiClient.post(
-        `/api/v1/attendance-corrections/${id}/approve`
+    mutationFn: async ({ approvalId, remarks }) => {
+      await apiClient.post(
+        `/api/v1/approvals/${approvalId}/approve`,
+        { remarks }
       );
-    }
-
-    if (type === "attendance_unlock") {
-      return apiClient.post(
-        `/api/v1/attendance-unlock-requests/${id}/approve`
-      );
-    }
-
-    throw new Error("Unknown approval type");
-  },
-  onSuccess: () => {
-    qc.invalidateQueries({ queryKey: ["approvals"] });
-    qc.invalidateQueries({ queryKey: ["leaves"] });
-    qc.invalidateQueries({ queryKey: ["leave-balances"] });
-  },
-});
-
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["approvals"] });
+      qc.invalidateQueries({ queryKey: ["leaves"] });
+      qc.invalidateQueries({ queryKey: ["leave-balances"] });
+    },
+  });
 
   const reject = useMutation({
-    mutationFn: async ({ type, id, reason }) => {
+    mutationFn: async ({ approvalId, reason }) => {
       if (!reason) {
         throw new Error("Reject reason is required");
       }
 
-      if (type === "leave") {
-        return apiClient.post(
-          `/api/v1/leaves/${id}/reject`,
-          { reason }
-        );
-      }
-
-      if (type === "attendance") {
-        return apiClient.post(
-          `/api/v1/attendance/corrections/${id}/reject`,
-          { reason }
-        );
-      }
-      if (type === "attendance_unlock") {
-        return apiClient.post(
-          `/api/v1/attendance-unlock-requests/${id}/reject`,
-          { reason }
-        );
-      }
-
-      throw new Error("Unknown approval type");
+      await apiClient.post(
+        `/api/v1/approvals/${approvalId}/reject`,
+        { reason }
+      );
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["approvals"] });
