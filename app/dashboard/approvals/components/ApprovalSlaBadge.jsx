@@ -1,24 +1,54 @@
 "use client";
 
-import { AlertTriangle } from "lucide-react";
-import { getSlaMeta, formatDuration } from "../utils/sla";
+import { Clock, AlertTriangle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 export default function ApprovalSlaBadge({ step }) {
-  const meta = getSlaMeta(step);
-  if (!meta) return null;
+  if (!step || !step.sla_hours) return null;
 
-  if (meta.overdue) {
+  // Calculate SLA deadline
+  const createdAt = step.created_at ? new Date(step.created_at) : new Date();
+  const slaHours = step.sla_hours;
+  const slaDeadline = new Date(createdAt.getTime() + slaHours * 60 * 60 * 1000);
+  
+  // Calculate remaining time
+  const now = new Date();
+  const remainingMs = slaDeadline - now;
+  const remainingHours = Math.floor(remainingMs / (1000 * 60 * 60));
+  const remainingMinutes = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60));
+
+  // Check if overdue
+  const isOverdue = remainingMs < 0;
+  const isUrgent = remainingMs > 0 && remainingMs < 2 * 60 * 60 * 1000; // Less than 2 hours
+
+  if (isOverdue) {
+    const overdueHours = Math.abs(remainingHours);
+    const overdueMinutes = Math.abs(remainingMinutes);
+    
     return (
-      <div className="flex items-center gap-1 text-xs font-medium text-red-600">
+      <Badge variant="destructive" className="gap-1.5 text-xs">
         <AlertTriangle className="h-3 w-3" />
-        Overdue by {formatDuration(meta.remainingMs)}
-      </div>
+        Overdue by {overdueHours > 0 && `${overdueHours}h `}
+        {overdueMinutes}m
+      </Badge>
+    );
+  }
+
+  if (isUrgent) {
+    return (
+      <Badge variant="outline" className="gap-1.5 text-xs border-amber-500 text-amber-700">
+        <Clock className="h-3 w-3" />
+        {remainingHours > 0 && `${remainingHours}h `}
+        {remainingMinutes}m remaining
+      </Badge>
     );
   }
 
   return (
-    <div className="text-xs text-muted-foreground">
-      SLA remaining {formatDuration(meta.remainingMs)}
-    </div>
+    <Badge variant="outline" className="gap-1.5 text-xs text-muted-foreground">
+      <Clock className="h-3 w-3" />
+      {remainingHours > 0 && `${remainingHours}h `}
+      {remainingMinutes}m remaining
+    </Badge>
   );
 }

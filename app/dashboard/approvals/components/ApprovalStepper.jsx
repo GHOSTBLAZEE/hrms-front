@@ -89,7 +89,6 @@ export default function ApprovalStepper({ steps = [] }) {
         // Count approvers
         const approvedCount = group.filter(s => s.status === "approved").length;
         const totalCount = group.length;
-        const allApproved = approvedCount === totalCount && primary.approval_mode === "all";
 
         return (
           <div key={primary.step_order}>
@@ -117,7 +116,7 @@ export default function ApprovalStepper({ steps = [] }) {
                   <div className="flex items-center gap-3">
                     <div
                       className={[
-                        "flex h-8 w-8 items-center justify-center rounded-full font-semibold text-sm",
+                        "flex h-8 w-8 items-center justify-center rounded-full font-semibold text-sm flex-shrink-0",
                         stepStatus === "approved"
                           ? "bg-green-100 text-green-700"
                           : stepStatus === "rejected"
@@ -136,7 +135,7 @@ export default function ApprovalStepper({ steps = [] }) {
                       )}
                     </div>
 
-                    <div>
+                    <div className="min-w-0">
                       <div className="font-semibold text-sm">
                         Step {primary.step_order}
                         {stepStatus === "approved" && " - Approved"}
@@ -144,7 +143,7 @@ export default function ApprovalStepper({ steps = [] }) {
                         {stepStatus === "skipped" && " - Skipped"}
                         {stepStatus === "pending" && canAct && " - Action Required"}
                       </div>
-                      <div className="flex items-center gap-1.5 mt-0.5 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-1.5 mt-0.5 text-xs text-muted-foreground flex-wrap">
                         <ModeIcon mode={primary.approval_mode} />
                         <span>{modeLabel(primary.approval_mode)}</span>
                         {primary.approval_mode === "all" && stepStatus === "pending" && (
@@ -165,17 +164,22 @@ export default function ApprovalStepper({ steps = [] }) {
                 ====================== */}
                 <div className="mt-4 flex flex-wrap gap-2">
                   {group.map((step) => {
-                    // Show approver name (the designated approver)
-                    const approverName = step.approver?.name || "Approver";
-                    const approverLabel = step.approver_type === "role" 
-                      ? `${approverName} (Role)` 
-                      : approverName;
+                    // Get approver name - handle missing data gracefully
+                    let approverName = "Approver";
+                    
+                    if (step.approver?.name) {
+                      approverName = step.approver.name;
+                    } else if (step.approver_type === "role") {
+                      approverName = "Role";
+                    } else if (step.approver_type === "user") {
+                      approverName = "User";
+                    }
 
                     return (
                       <ApprovalAvatar
                         key={step.id}
                         type={step.approver_type}
-                        name={approverLabel}
+                        name={approverName}
                         status={step.status}
                         showTooltip
                       />
@@ -188,7 +192,9 @@ export default function ApprovalStepper({ steps = [] }) {
                 ====================== */}
                 {stepStatus === "pending" && (
                   <div className="mt-3 space-y-2">
-                    <ApprovalSlaBadge step={primary} />
+                    {primary.sla_hours && (
+                      <ApprovalSlaBadge step={primary} />
+                    )}
 
                     {primary.escalated_at && (
                       <div className="flex items-center gap-1.5 text-xs font-medium text-red-600 bg-red-50 rounded px-2 py-1 w-fit">
@@ -208,52 +214,56 @@ export default function ApprovalStepper({ steps = [] }) {
                 )}
 
                 {/* Show who acted for completed steps */}
-                {(stepStatus === "approved" || stepStatus === "rejected") && (
-                  <div className="mt-3 pt-3 border-t border-border/50">
+                {(stepStatus === "approved" || stepStatus === "rejected") && 
+                 group.some(s => s.acted_by && s.acted_at) && (
+                  <div className="mt-3 pt-3 border-t border-border/50 space-y-2">
                     {group
                       .filter(s => s.acted_by && s.acted_at)
                       .map((step) => {
                         // Show the actual person who acted
                         const actorName = step.actor?.name || "System";
+                        
                         // Show which approver slot they filled
-                        const approverInfo = step.approver?.name 
-                          ? ` (as ${step.approver.name}${step.approver_type === 'role' ? ' role' : ''})`
-                          : '';
+                        let approverInfo = "";
+                        if (step.approver?.name) {
+                          approverInfo = step.approver_type === "role" 
+                            ? ` (as ${step.approver.name} role)` 
+                            : ` (as ${step.approver.name})`;
+                        }
                         
                         return (
-                          <div
-                            key={step.id}
-                            className="flex items-center justify-between text-xs text-muted-foreground"
-                          >
-                            <span>
-                              {step.status === "approved" ? "Approved" : "Rejected"} by{" "}
-                              <span className="font-medium text-foreground">
-                                {actorName}
-                              </span>
-                              {approverInfo && (
-                                <span className="text-muted-foreground ml-1">
-                                  {approverInfo}
+                          <div key={step.id} className="space-y-1">
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="text-muted-foreground">
+                                {step.status === "approved" ? "Approved" : "Rejected"} by{" "}
+                                <span className="font-medium text-foreground">
+                                  {actorName}
                                 </span>
-                              )}
-                            </span>
-                            <span>
-                              {new Date(step.acted_at).toLocaleDateString("en-IN", {
-                                day: "numeric",
-                                month: "short",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
-                            </span>
+                                {approverInfo && (
+                                  <span className="text-muted-foreground">
+                                    {approverInfo}
+                                  </span>
+                                )}
+                              </span>
+                              <span className="text-muted-foreground">
+                                {new Date(step.acted_at).toLocaleDateString("en-IN", {
+                                  day: "numeric",
+                                  month: "short",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
+                              </span>
+                            </div>
+                            
+                            {/* Show remarks for this specific step */}
+                            {step.remarks && (
+                              <div className="text-xs text-muted-foreground italic pl-2 border-l-2 border-muted">
+                                "{step.remarks}"
+                              </div>
+                            )}
                           </div>
                         );
                       })}
-                    
-                    {/* Show remarks if any */}
-                    {group.some(s => s.remarks) && (
-                      <div className="mt-2 text-xs text-muted-foreground italic">
-                        "{group.find(s => s.remarks)?.remarks}"
-                      </div>
-                    )}
                   </div>
                 )}
               </div>

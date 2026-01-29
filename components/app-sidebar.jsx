@@ -1,79 +1,65 @@
 "use client";
 
+import * as React from "react";
+import { Building2 } from "lucide-react";
+
+import { NavMain } from "@/components/nav-main";
+import { NavSettings } from "@/components/nav-settings";
+import { NavUser } from "@/components/nav-user";
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarHeader,
+  SidebarRail,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
 } from "@/components/ui/sidebar";
-import { NavMain } from "@/components/nav-main";
-import { NavSecondary } from "@/components/nav-secondary";
-import { NavUser } from "@/components/nav-user";
-import { menu } from "@/config/menu";
+
+
 import { useAuth } from "@/hooks/useAuth";
+import { filterMenuItems, menuData } from "@/config/menu";
 
-/* ================= PERMISSION HELPERS ================= */
-
-function canShowItem(userPermissions, requiredPermissions) {
-  if (!requiredPermissions || requiredPermissions.length === 0) return true;
-
-  return requiredPermissions.some((p) =>
-    userPermissions.includes(p)
-  );
-}
-
-function canShowAnySubMenu(userPermissions, item) {
-  if (!item.subMenu) return false;
-
-  return item.subMenu.some((sub) =>
-    canShowItem(userPermissions, sub.permissions)
-  );
-}
-
-/* ================= SIDEBAR ================= */
-
-export function AppSidebar(props) {
+export function AppSidebar({ ...props }) {
   const { user, permissions = [], isLoading } = useAuth();
 
   if (isLoading) return null;
 
-  const mainItems = menu.main
-    .map((item) => {
-      const showParent =
-        canShowItem(permissions, item.permissions) ||
-        canShowAnySubMenu(permissions, item);
-
-      if (!showParent) return null;
-
-      return {
-        ...item,
-        subMenu: item.subMenu?.filter((sub) =>
-          canShowItem(permissions, sub.permissions)
-        ),
-      };
-    })
-    .filter(Boolean);
-
-  const settingsItems = menu.settings.filter((item) =>
-    canShowItem(permissions, item.permissions)
-  );
+  // Filter menu items based on permissions
+  const navMain = filterMenuItems(menuData.navMain, permissions);
+  const settings = filterMenuItems(menuData.settings, permissions);
 
   return (
-    <Sidebar collapsible="offcanvas" {...props}>
+    <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <div className="px-3 py-2 text-lg font-semibold">HRMS</div>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton size="lg" asChild>
+              <a href="/dashboard">
+                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                  <Building2 className="size-4" />
+                </div>
+                <div className="grid flex-1 text-left text-sm leading-tight">
+                  <span className="truncate font-semibold">HRMS</span>
+                  <span className="truncate text-xs">Nova System</span>
+                </div>
+              </a>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
       </SidebarHeader>
 
       <SidebarContent>
-        <NavMain items={mainItems} />
-        {settingsItems.length > 0 && (
-          <NavSecondary items={settingsItems} className="mt-auto" />
-        )}
+        <NavMain items={navMain} />
+        {settings.length > 0 && <NavSettings items={settings} />}
       </SidebarContent>
 
       <SidebarFooter>
         {user && <NavUser user={user} />}
       </SidebarFooter>
+
+      <SidebarRail />
     </Sidebar>
   );
 }
