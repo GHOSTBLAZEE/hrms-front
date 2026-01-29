@@ -189,9 +189,11 @@ export default function ApprovalsPage({
     }
   };
 
+  // ✅ FIX: This now properly accepts the reason parameter from the drawer
   const rejectSingle = async (reason) => {
     if (!activeApprovalId) return;
 
+    console.log("🔴 rejectSingle called with reason:", reason);
     toastInfo("Rejecting request…");
 
     try {
@@ -201,7 +203,6 @@ export default function ApprovalsPage({
       });
 
       toastSuccess("Request rejected");
-      setOpenBulkReject(false);
       setDrawerOpen(false);
       setActiveApprovalId(null);
     } catch (err) {
@@ -279,14 +280,14 @@ export default function ApprovalsPage({
         title={selectedIds.length > 1 ? `Reject ${selectedIds.length} Requests` : "Reject Request"}
       />
 
-      {/* Approval Drawer */}
+      {/* ✅ FIX: Pass rejectSingle (which accepts reason) instead of opening dialog */}
       <ApprovalDrawer
         open={drawerOpen}
         onClose={() => !isBusy && setDrawerOpen(false)}
         approval={approvalDetailsQ.data}
         loading={isBusy}
         onApprove={approveSingle}
-        onReject={() => setOpenBulkReject(true)}
+        onReject={rejectSingle}
       />
     </div>
   );

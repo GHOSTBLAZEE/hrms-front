@@ -1,14 +1,27 @@
 "use client";
 
+import { useState } from "react";
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { 
   Calendar, 
   Clock, 
@@ -34,6 +47,10 @@ export default function ApprovalDrawer({
   onReject,
   loading = false,
 }) {
+  const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
+  const [rejectError, setRejectError] = useState("");
+
   if (!approval) return null;
 
   const {
@@ -52,6 +69,37 @@ export default function ApprovalDrawer({
   const isLeave = approvable_type_key === "leave";
   const isAttendance = approvable_type_key === "attendance";
   const isUnlock = approvable_type_key === "attendance_unlock";
+
+  /* -----------------------------
+   | Handlers
+   |----------------------------- */
+  const handleRejectClick = () => {
+    setRejectReason("");
+    setRejectError("");
+    setRejectDialogOpen(true);
+  };
+
+  const handleRejectConfirm = () => {
+    if (!rejectReason.trim()) {
+      setRejectError("Please provide a reason for rejection");
+      return;
+    }
+
+    if (rejectReason.trim().length < 3) {
+      setRejectError("Reason must be at least 3 characters");
+      return;
+    }
+
+    // Call parent's reject handler with the reason
+    onReject(rejectReason.trim());
+    setRejectDialogOpen(false);
+  };
+
+  const handleRejectCancel = () => {
+    setRejectDialogOpen(false);
+    setRejectReason("");
+    setRejectError("");
+  };
 
   /* -----------------------------
    | Utils
@@ -78,220 +126,271 @@ export default function ApprovalDrawer({
    | Render
    |----------------------------- */
   return (
-    <Sheet open={open} onOpenChange={(v) => !loading && onClose(v)}>
-      <SheetContent className="w-full sm:w-[540px] flex flex-col p-0">
-        {/* ======================
-           Fixed Header
-        ======================= */}
-        <SheetHeader className="px-6 pt-6 pb-4 border-b bg-background sticky top-0 z-10">
-          <div className="flex items-start justify-between gap-4">
-            <div className="space-y-1">
-              <SheetTitle className="text-xl">
-                {isLeave && "Leave Request"}
-                {isAttendance && "Attendance Correction"}
-                {isUnlock && "Attendance Unlock Request"}
-                {!isLeave && !isAttendance && !isUnlock && "Approval Request"}
-              </SheetTitle>
-              <p className="text-sm text-muted-foreground">
-                Review and take action on this request
-              </p>
-            </div>
-            <ApprovalStatusChip status={status} />
-          </div>
-        </SheetHeader>
-
-        {/* ======================
-           Scrollable Content
-        ======================= */}
-        <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
-          {/* Employee Info Card */}
-          <div className="rounded-lg border bg-card p-4">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                <User className="h-5 w-5 text-primary" />
+    <>
+      <Sheet open={open} onOpenChange={(v) => !loading && onClose(v)}>
+        <SheetContent className="w-full sm:w-[540px] flex flex-col p-0">
+          {/* ======================
+             Fixed Header
+          ======================= */}
+          <SheetHeader className="px-6 pt-6 pb-4 border-b bg-background sticky top-0 z-10">
+            <div className="flex items-start justify-between gap-4">
+              <div className="space-y-1">
+                <SheetTitle className="text-xl">
+                  {isLeave && "Leave Request"}
+                  {isAttendance && "Attendance Correction"}
+                  {isUnlock && "Attendance Unlock Request"}
+                  {!isLeave && !isAttendance && !isUnlock && "Approval Request"}
+                </SheetTitle>
+                <p className="text-sm text-muted-foreground">
+                  Review and take action on this request
+                </p>
               </div>
-              <div>
-                <div className="text-xs text-muted-foreground">Requested by</div>
-                <div className="font-semibold">{entity?.employee?.user?.name ?? "—"}</div>
-                <div className="text-xs text-muted-foreground">
-                  {entity?.employee?.employee_code}
+              <ApprovalStatusChip status={status} />
+            </div>
+          </SheetHeader>
+
+          {/* ======================
+             Scrollable Content
+          ======================= */}
+          <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+            {/* Employee Info Card */}
+            <div className="rounded-lg border bg-card p-4">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <User className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">Requested by</div>
+                  <div className="font-semibold">{entity?.employee?.user?.name ?? "—"}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {entity?.employee?.employee_code}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* ======================
-             Request Details
-          ======================= */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-semibold flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              Request Details
-            </h3>
+            {/* ======================
+               Request Details
+            ======================= */}
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                Request Details
+              </h3>
 
-            {/* ---------- Leave ---------- */}
-            {isLeave && (
-              <div className="space-y-3">
-                <DetailRow
-                  icon={<Calendar className="h-4 w-4" />}
-                  label="Leave Period"
-                  value={`${fmtDate(entity.start_date)} → ${fmtDate(entity.end_date)}`}
-                />
-
-                <DetailRow
-                  icon={<Clock className="h-4 w-4" />}
-                  label="Duration"
-                  value={`${entity.days} day(s)`}
-                />
-
-                {entity.leave_type && (
+              {/* ---------- Leave ---------- */}
+              {isLeave && (
+                <div className="space-y-3">
                   <DetailRow
-                    label="Leave Type"
-                    value={entity.leave_type.name}
-                    badge
+                    icon={<Calendar className="h-4 w-4" />}
+                    label="Leave Period"
+                    value={`${fmtDate(entity.start_date)} → ${fmtDate(entity.end_date)}`}
                   />
-                )}
 
-                {entity.reason && (
-                  <div className="rounded-lg border-l-4 border-primary bg-muted/40 p-4">
-                    <div className="text-xs font-medium uppercase text-muted-foreground mb-2 flex items-center gap-2">
-                      <AlertCircle className="h-3 w-3" />
-                      Reason
+                  <DetailRow
+                    icon={<Clock className="h-4 w-4" />}
+                    label="Duration"
+                    value={`${entity.days} day(s)`}
+                  />
+
+                  {entity.leave_type && (
+                    <DetailRow
+                      label="Leave Type"
+                      value={entity.leave_type.name}
+                      badge
+                    />
+                  )}
+
+                  {entity.reason && (
+                    <div className="rounded-lg border-l-4 border-primary bg-muted/40 p-4">
+                      <div className="text-xs font-medium uppercase text-muted-foreground mb-2 flex items-center gap-2">
+                        <AlertCircle className="h-3 w-3" />
+                        Reason
+                      </div>
+                      <p className="text-sm leading-relaxed">{entity.reason}</p>
                     </div>
-                    <p className="text-sm leading-relaxed">{entity.reason}</p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* ---------- Attendance Correction ---------- */}
-            {isAttendance && entity && (
-              <div className="space-y-3">
-                <DetailRow
-                  icon={<Calendar className="h-4 w-4" />}
-                  label="Attendance Date"
-                  value={fmtDate(entity.attendance?.date)}
-                />
-
-                <div className="rounded-lg border bg-muted/30 overflow-hidden">
-                  <div className="bg-muted px-4 py-2 border-b">
-                    <div className="text-xs font-semibold uppercase tracking-wide">
-                      Requested Changes
-                    </div>
-                  </div>
-                  
-                  <div className="p-4 space-y-3">
-                    {entity.requested_check_in && (
-                      <ChangeRow
-                        label="Check-in"
-                        current={fmtTime(entity.attendance?.check_in)}
-                        requested={fmtTime(entity.requested_check_in)}
-                      />
-                    )}
-
-                    {entity.requested_check_out && (
-                      <ChangeRow
-                        label="Check-out"
-                        current={fmtTime(entity.attendance?.check_out)}
-                        requested={fmtTime(entity.requested_check_out)}
-                      />
-                    )}
-
-                    {entity.requested_status && (
-                      <ChangeRow
-                        label="Status"
-                        current={entity.attendance?.status}
-                        requested={entity.requested_status}
-                        isBadge
-                      />
-                    )}
-                  </div>
+                  )}
                 </div>
+              )}
 
-                {entity.reason && (
-                  <div className="rounded-lg border-l-4 border-primary bg-muted/40 p-4">
-                    <div className="text-xs font-medium uppercase text-muted-foreground mb-2 flex items-center gap-2">
-                      <AlertCircle className="h-3 w-3" />
-                      Reason
+              {/* ---------- Attendance Correction ---------- */}
+              {isAttendance && entity && (
+                <div className="space-y-3">
+                  <DetailRow
+                    icon={<Calendar className="h-4 w-4" />}
+                    label="Attendance Date"
+                    value={fmtDate(entity.attendance?.date)}
+                  />
+
+                  <div className="rounded-lg border bg-muted/30 overflow-hidden">
+                    <div className="bg-muted px-4 py-2 border-b">
+                      <div className="text-xs font-semibold uppercase tracking-wide">
+                        Requested Changes
+                      </div>
                     </div>
-                    <p className="text-sm leading-relaxed">{entity.reason}</p>
-                  </div>
-                )}
-              </div>
-            )}
+                    
+                    <div className="p-4 space-y-3">
+                      {entity.requested_check_in && (
+                        <ChangeRow
+                          label="Check-in"
+                          current={fmtTime(entity.attendance?.check_in)}
+                          requested={fmtTime(entity.requested_check_in)}
+                        />
+                      )}
 
-            {/* ---------- Attendance Unlock ---------- */}
-            {isUnlock && entity && (
-              <div className="space-y-3">
-                <DetailRow
-                  icon={<Calendar className="h-4 w-4" />}
-                  label="Unlock Date"
-                  value={fmtDate(entity.date)}
-                />
+                      {entity.requested_check_out && (
+                        <ChangeRow
+                          label="Check-out"
+                          current={fmtTime(entity.attendance?.check_out)}
+                          requested={fmtTime(entity.requested_check_out)}
+                        />
+                      )}
 
-                {entity.reason && (
-                  <div className="rounded-lg border-l-4 border-primary bg-muted/40 p-4">
-                    <div className="text-xs font-medium uppercase text-muted-foreground mb-2 flex items-center gap-2">
-                      <AlertCircle className="h-3 w-3" />
-                      Reason
+                      {entity.requested_status && (
+                        <ChangeRow
+                          label="Status"
+                          current={entity.attendance?.status}
+                          requested={entity.requested_status}
+                          isBadge
+                        />
+                      )}
                     </div>
-                    <p className="text-sm leading-relaxed">{entity.reason}</p>
                   </div>
-                )}
-              </div>
-            )}
-          </div>
 
-          <Separator />
+                  {entity.reason && (
+                    <div className="rounded-lg border-l-4 border-primary bg-muted/40 p-4">
+                      <div className="text-xs font-medium uppercase text-muted-foreground mb-2 flex items-center gap-2">
+                        <AlertCircle className="h-3 w-3" />
+                        Reason
+                      </div>
+                      <p className="text-sm leading-relaxed">{entity.reason}</p>
+                    </div>
+                  )}
+                </div>
+              )}
 
-          {/* ======================
-             Approval Flow
-          ======================= */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-semibold">Approval Workflow</h3>
-            <ApprovalStepper steps={steps} />
-          </div>
+              {/* ---------- Attendance Unlock ---------- */}
+              {isUnlock && entity && (
+                <div className="space-y-3">
+                  <DetailRow
+                    icon={<Calendar className="h-4 w-4" />}
+                    label="Unlock Date"
+                    value={fmtDate(entity.date)}
+                  />
 
-          <Separator />
+                  {entity.reason && (
+                    <div className="rounded-lg border-l-4 border-primary bg-muted/40 p-4">
+                      <div className="text-xs font-medium uppercase text-muted-foreground mb-2 flex items-center gap-2">
+                        <AlertCircle className="h-3 w-3" />
+                        Reason
+                      </div>
+                      <p className="text-sm leading-relaxed">{entity.reason}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
 
-          {/* ======================
-             Approval History
-          ======================= */}
-          <div className="space-y-4">
-            <h3 className="text-sm font-semibold">Activity Timeline</h3>
-            <ApprovalHistoryTimeline steps={steps} />
-          </div>
-        </div>
+            <Separator />
 
-        {/* ======================
-           Fixed Footer Actions
-        ======================= */}
-        {canAct && (
-          <div className="border-t bg-background px-6 py-4 sticky bottom-0">
-            <div className="flex gap-3">
-              <Button
-                variant="outline"
-                className="flex-1"
-                disabled={loading}
-                onClick={onReject}
-                size="lg"
-              >
-                Reject
-              </Button>
+            {/* ======================
+               Approval Flow
+            ======================= */}
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold">Approval Workflow</h3>
+              <ApprovalStepper steps={steps} />
+            </div>
 
-              <Button
-                className="flex-1"
-                disabled={loading}
-                onClick={onApprove}
-                size="lg"
-              >
-                {loading ? "Processing…" : "Approve"}
-              </Button>
+            <Separator />
+
+            {/* ======================
+               Approval History
+            ======================= */}
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold">Activity Timeline</h3>
+              <ApprovalHistoryTimeline steps={steps} />
             </div>
           </div>
-        )}
-      </SheetContent>
-    </Sheet>
+
+          {/* ======================
+             Fixed Footer Actions
+          ======================= */}
+          {canAct && (
+            <div className="border-t bg-background px-6 py-4 sticky bottom-0">
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  disabled={loading}
+                  onClick={handleRejectClick}
+                  size="lg"
+                >
+                  Reject
+                </Button>
+
+                <Button
+                  className="flex-1"
+                  disabled={loading}
+                  onClick={onApprove}
+                  size="lg"
+                >
+                  {loading ? "Processing…" : "Approve"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
+
+      {/* ======================
+         Reject Confirmation Dialog
+      ======================= */}
+      <AlertDialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reject Request</AlertDialogTitle>
+            <AlertDialogDescription>
+              Please provide a reason for rejecting this request. This will be shared with the requester.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          
+          <div className="space-y-2">
+            <Label htmlFor="reject-reason">Reason for rejection *</Label>
+            <Textarea
+              id="reject-reason"
+              placeholder="Enter rejection reason (minimum 3 characters)..."
+              value={rejectReason}
+              onChange={(e) => {
+                setRejectReason(e.target.value);
+                setRejectError(""); // Clear error when typing
+              }}
+              rows={4}
+              className={rejectError ? "border-destructive" : ""}
+              disabled={loading}
+            />
+            {rejectError && (
+              <p className="text-sm text-destructive">{rejectError}</p>
+            )}
+          </div>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel 
+              onClick={handleRejectCancel}
+              disabled={loading}
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleRejectConfirm}
+              disabled={loading || !rejectReason.trim()}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {loading ? "Rejecting..." : "Reject Request"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
 
