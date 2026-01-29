@@ -2,7 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNotificationRealtime } from "./useNotificationRealtime";
 import { useAuth } from "@/hooks/useAuth";
-import apiClient from "@/lib/apiClient"; // ✅ Import apiClient
+import apiClient from "@/lib/apiClient";
 
 export function useNotifications() {
   const queryClient = useQueryClient();
@@ -14,8 +14,14 @@ export function useNotifications() {
   const { data, isLoading, isFetching, refetch } = useQuery({
     queryKey: ["notifications"],
     queryFn: fetchNotifications,
-    refetchInterval: 60000, // Fallback polling every 60s
+    refetchInterval: 60000,
     staleTime: 30000,
+    // ✅ Transform the paginated response
+    select: (response) => ({
+      items: response.data || [], // ✅ Map data.data to items
+      meta: response.meta,
+      links: response.links,
+    }),
   });
 
   const markAsRead = useMutation({
@@ -50,10 +56,10 @@ export function useNotifications() {
   };
 }
 
-// ✅ API functions using apiClient
+// API functions using apiClient
 async function fetchNotifications() {
   const response = await apiClient.get("/api/v1/notifications");
-  return response.data;
+  return response.data; // Returns { data: [...], meta: {...}, links: {...} }
 }
 
 async function markNotificationAsRead(id) {
