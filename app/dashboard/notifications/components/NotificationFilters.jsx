@@ -1,4 +1,6 @@
-import { Check } from "lucide-react";
+"use client";
+
+import { Filter } from "lucide-react";
 
 export default function NotificationFilters({
   filter,
@@ -8,83 +10,71 @@ export default function NotificationFilters({
   types,
   counts,
 }) {
-  const statusFilters = [
-    { value: "all", label: "All", count: counts.all },
-    { value: "unread", label: "Unread", count: counts.unread },
-    { value: "read", label: "Read", count: counts.read },
-  ];
-
   return (
-    <div className="space-y-3">
-      {/* Status Filters */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-2">
-        {statusFilters.map((item) => (
+    <div className="flex flex-col sm:flex-row gap-3">
+      {/* Read status filter */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <Filter className="h-4 w-4 text-muted-foreground" />
+        <div className="flex gap-1 bg-muted/50 p-1 rounded-lg">
           <button
-            key={item.value}
-            onClick={() => onFilterChange(item.value)}
-            className={`
-              inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap
-              ${
-                filter === item.value
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "bg-muted hover:bg-muted/80 text-foreground"
-              }
-            `}
+            onClick={() => onFilterChange("all")}
+            className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+              filter === "all"
+                ? "bg-background shadow-sm"
+                : "hover:bg-background/50"
+            }`}
           >
-            {item.label}
-            <span
-              className={`
-                px-2 py-0.5 rounded-full text-xs font-semibold
-                ${
-                  filter === item.value
-                    ? "bg-primary-foreground/20 text-primary-foreground"
-                    : "bg-background text-muted-foreground"
-                }
-              `}
-            >
-              {item.count}
-            </span>
+            All <span className="text-muted-foreground">({counts.all})</span>
           </button>
-        ))}
+          <button
+            onClick={() => onFilterChange("unread")}
+            className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+              filter === "unread"
+                ? "bg-background shadow-sm"
+                : "hover:bg-background/50"
+            }`}
+          >
+            Unread <span className="text-muted-foreground">({counts.unread})</span>
+          </button>
+          <button
+            onClick={() => onFilterChange("read")}
+            className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+              filter === "read"
+                ? "bg-background shadow-sm"
+                : "hover:bg-background/50"
+            }`}
+          >
+            Read <span className="text-muted-foreground">({counts.read})</span>
+          </button>
+        </div>
       </div>
 
-      {/* Type Filters */}
+      {/* Type filter */}
       {types.length > 0 && (
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground">Type:</span>
-          <button
-            onClick={() => onTypeChange("all")}
-            className={`
-              inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all
-              ${
-                selectedType === "all"
-                  ? "bg-primary/10 text-primary border border-primary/20"
-                  : "bg-muted hover:bg-muted/80 text-muted-foreground"
-              }
-            `}
+          <select
+            value={selectedType}
+            onChange={(e) => onTypeChange(e.target.value)}
+            className="px-3 py-1.5 text-sm border border-input rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-ring"
           >
-            {selectedType === "all" && <Check className="h-3 w-3" />}
-            All Types
-          </button>
-          {types.map((type) => (
-            <button
-              key={type}
-              onClick={() => onTypeChange(type)}
-              className={`
-                inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all capitalize
-                ${
-                  selectedType === type
-                    ? "bg-primary/10 text-primary border border-primary/20"
-                    : "bg-muted hover:bg-muted/80 text-muted-foreground"
-                }
-              `}
-            >
-              {selectedType === type && <Check className="h-3 w-3" />}
-              {type.replace(/_/g, " ")}
-            </button>
-          ))}
+            <option value="all">All types</option>
+            {types.map((type) => (
+              <option key={type} value={type}>
+                {formatNotificationType(type)}
+              </option>
+            ))}
+          </select>
         </div>
       )}
     </div>
   );
+}
+
+// Helper function to format notification type
+function formatNotificationType(type) {
+  return type
+    .split(".")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
 }
