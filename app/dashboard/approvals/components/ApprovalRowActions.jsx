@@ -1,30 +1,22 @@
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { useApprovalActions } from "../hooks/useApprovalActions";
-import RejectApprovalDialog from "./RejectApprovalDialog";
-import { useRouter } from "next/navigation";
-
 export default function ApprovalRowActions({ item }) {
   const { approve, reject } = useApprovalActions();
   const router = useRouter();
   const [openReject, setOpenReject] = useState(false);
 
   const isPending = item.status === "pending";
-  const isLoading =
-    approve.isLoading || reject.isLoading;
+  const isLoading = approve.isLoading || reject.isLoading;
 
-  // ✅ Non-pending → View Audit
-  if (!isPending) {
+  // ❌ Not pending OR not allowed → View only
+  if (!isPending || !item.can_act) {
     return (
       <Button
         size="sm"
         variant="ghost"
         onClick={() =>
-          item.audit_url &&
-          router.push(item.audit_url)
+          item.audit_url && router.push(item.audit_url)
         }
       >
-        View Audit
+        View
       </Button>
     );
   }
@@ -45,32 +37,21 @@ export default function ApprovalRowActions({ item }) {
           size="sm"
           disabled={isLoading}
           onClick={() =>
-            approve.mutate({
-              type: item.type,
-              id: item.id,
-            })
+            approve.mutate({ approvalId: item.id })
           }
         >
           Approve
         </Button>
       </div>
 
-      {/* ✅ Proper reject reason */}
       <RejectApprovalDialog
         open={openReject}
         onClose={() => setOpenReject(false)}
         isLoading={reject.isLoading}
         onConfirm={(reason) => {
           reject.mutate(
-            {
-              type: item.type,
-              id: item.id,
-              reason,
-            },
-            {
-              onSuccess: () =>
-                setOpenReject(false),
-            }
+            { approvalId: item.id, reason },
+            { onSuccess: () => setOpenReject(false) }
           );
         }}
       />

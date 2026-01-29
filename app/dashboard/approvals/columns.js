@@ -2,34 +2,35 @@ import StatusBadge from "./components/StatusBadge";
 
 export const approvalColumns = [
   {
+    accessorKey: "employee",
     header: "Employee",
-    cell: ({ row }) =>
-      row.original.employee?.name ?? "—",
+    cell: ({ row }) => row.original.employee?.name ?? "—",
   },
-
   {
+    accessorKey: "type",
     header: "Type",
     cell: ({ row }) => {
+      const type = row.original.type;
       const map = {
-        attendance: "Attendance Correction",
         leave: "Leave Request",
-        overtime: "Overtime Request",
+        attendance: "Attendance Correction",
+        attendance_unlock: "Attendance Unlock",
       };
-
-      return map[row.original.type] ?? row.original.type;
+      return map[type] ?? type ?? "—";
     },
   },
-
   {
+    accessorKey: "submitted_at",
     header: "Submitted",
-    cell: ({ row }) =>
-      new Date(row.original.submitted_at).toLocaleDateString(),
+    cell: ({ row }) => {
+      const date = row.original.submitted_at;
+      if (!date) return "—";
+      return new Date(date).toLocaleDateString();
+    },
   },
-
   {
+    accessorKey: "status",
     header: "Status",
-    cell: ({ row }) => (
-      <StatusBadge status={row.original.status} />
-    ),
+    cell: ({ row }) => <StatusBadge status={row.original.status} />,
   },
 ];

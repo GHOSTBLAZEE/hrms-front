@@ -1,15 +1,22 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { MoreVertical, Pencil, Trash2 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { MoreVertical } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/dropdown-menu";
 
 export default function DataTableActions({
   permissionPrefix,
   row,
   onEdit,
   onDelete,
+  onCopy,
 }) {
   const { hasPermission } = useAuth();
 
@@ -31,16 +38,16 @@ export default function DataTableActions({
         </Button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="end" className="w-36">
+      <DropdownMenuContent align="end" className="w-40">
         {canUpdate && (
           <DropdownMenuItem onClick={() => onEdit(row.original)}>
             Edit
           </DropdownMenuItem>
         )}
 
-        {canUpdate && (
+        {canUpdate && onCopy && (
           <DropdownMenuItem
-            onClick={() => navigator.clipboard.writeText(row.original.id)}
+            onClick={() => onCopy(row.original)}
           >
             Make a copy
           </DropdownMenuItem>

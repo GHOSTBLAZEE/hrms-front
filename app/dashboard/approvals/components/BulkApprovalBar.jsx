@@ -1,53 +1,72 @@
 "use client";
 
-import { memo } from "react";
 import { Button } from "@/components/ui/button";
+import { CheckCircle, XCircle, Loader2 } from "lucide-react";
 
-function BulkApprovalBar({
+export default function BulkApprovalBar({
   count,
-  onApprove,
-  onReject,
   disabled = false,
   isApproving = false,
   isRejecting = false,
+  onApprove,
+  onReject,
 }) {
-  if (!count) return null;
-
-  const isBusy = disabled || isApproving || isRejecting;
-
   return (
-    <div
-      className="flex items-center justify-between rounded-md border bg-muted/30 p-3"
-      role="region"
-      aria-label="Bulk approval actions"
-    >
-      <span className="text-sm font-medium">
-        {count} selected
-        {count > 1 ? " items" : " item"}
-      </span>
+    <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 flex items-center justify-between animate-in slide-in-from-top-2 duration-300">
+      <div className="flex items-center gap-3">
+        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+          <span className="text-sm font-semibold text-primary">{count}</span>
+        </div>
+        <div>
+          <p className="text-sm font-medium">
+            {count} {count === 1 ? "request" : "requests"} selected
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Choose an action to apply to all selected items
+          </p>
+        </div>
+      </div>
 
-      <div className="flex gap-2">
+      <div className="flex items-center gap-2">
         <Button
-          size="sm"
           variant="outline"
-          disabled={isBusy}
-          aria-disabled={isBusy}
+          size="sm"
+          disabled={disabled}
           onClick={onReject}
+          className="gap-2"
         >
-          {isRejecting ? "Rejecting…" : "Reject Selected"}
+          {isRejecting ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Rejecting...
+            </>
+          ) : (
+            <>
+              <XCircle className="h-4 w-4" />
+              Reject {count > 1 ? "All" : ""}
+            </>
+          )}
         </Button>
 
         <Button
           size="sm"
-          disabled={isBusy}
-          aria-disabled={isBusy}
+          disabled={disabled}
           onClick={onApprove}
+          className="gap-2"
         >
-          {isApproving ? "Approving…" : "Approve Selected"}
+          {isApproving ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Approving...
+            </>
+          ) : (
+            <>
+              <CheckCircle className="h-4 w-4" />
+              Approve {count > 1 ? "All" : ""}
+            </>
+          )}
         </Button>
       </div>
     </div>
   );
 }
-
-export default memo(BulkApprovalBar);

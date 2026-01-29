@@ -17,7 +17,9 @@ export const selectColumn = {
   cell: ({ row }) => (
     <Checkbox
       checked={row.getIsSelected()}
-      onCheckedChange={(value) => row.toggleSelected(!!value)}
+      onCheckedChange={(value) =>
+        row.toggleSelected(!!value)
+      }
       aria-label="Select row"
     />
   ),
