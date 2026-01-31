@@ -23,10 +23,10 @@ import {
   Calendar, 
   AlertCircle, 
   Info, 
-  FileText, 
-  CheckCircle,
-  TrendingUp,
-  Clock
+  CheckCircle2,
+  Loader2,
+  AlertTriangle,
+  CalendarX
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -48,6 +48,7 @@ export default function ApplyLeaveDialog({
   const [errors, setErrors] = useState({});
   const [preview, setPreview] = useState(null);
   const [isCalculating, setIsCalculating] = useState(false);
+  const [previewError, setPreviewError] = useState(null);
 
   // Reset form when dialog opens/closes
   useEffect(() => {
@@ -61,13 +62,18 @@ export default function ApplyLeaveDialog({
       });
       setErrors({});
       setPreview(null);
+      setPreviewError(null);
     }
   }, [open]);
 
-  // Set preselected date
+  // Set preselected date - FIXED: Use local date formatting to avoid timezone shift
   useEffect(() => {
     if (preselectedDate && open) {
-      const dateStr = preselectedDate.toISOString().split("T")[0];
+      const year = preselectedDate.getFullYear();
+      const month = String(preselectedDate.getMonth() + 1).padStart(2, '0');
+      const day = String(preselectedDate.getDate()).padStart(2, '0');
+      const dateStr = `${year}-${month}-${day}`;
+      
       setFormData((prev) => ({
         ...prev,
         start_date: dateStr,
@@ -76,23 +82,25 @@ export default function ApplyLeaveDialog({
     }
   }, [preselectedDate, open]);
 
-  // Categorize leave types - memoized for performance
+  // Categorize leave types
   const { paidLeaves, unpaidLeaves } = useMemo(() => {
     const paid = leaveTypes.filter(t => t.is_paid);
     const unpaid = leaveTypes.filter(t => !t.is_paid);
     return { paidLeaves: paid, unpaidLeaves: unpaid };
   }, [leaveTypes]);
 
-  // Get balance info - memoized
+  // Get balance info
   const getBalanceInfo = useMemo(() => {
     const balanceMap = new Map();
     balances.forEach(b => {
-      balanceMap.set(b.leave_type?.id, {
-        available: b.total - b.used - b.pending,
-        total: b.total,
-        used: b.used,
-        pending: b.pending,
-      });
+      if (b.leave_type?.id) {
+        balanceMap.set(b.leave_type.id, {
+          available: parseFloat(b.total || 0) - parseFloat(b.used || 0) - parseFloat(b.pending || 0),
+          total: parseFloat(b.total || 0),
+          used: parseFloat(b.used || 0),
+          pending: parseFloat(b.pending || 0),
+        });
+      }
     });
     
     return (leaveTypeId) => {
@@ -105,44 +113,72 @@ export default function ApplyLeaveDialog({
     };
   }, [balances]);
 
-  // Selected type and balance
+  // Selected type
   const selectedType = useMemo(() => 
     leaveTypes.find(t => t.id === parseInt(formData.leave_type_id)),
     [leaveTypes, formData.leave_type_id]
   );
 
-  const selectedBalance = useMemo(() => 
-    balances.find(b => b.leave_type?.id === parseInt(formData.leave_type_id)),
-    [balances, formData.leave_type_id]
-  );
-
-  // Calculate leave preview - debounced
+  // Calculate leave preview
   useEffect(() => {
     if (!formData.leave_type_id || !formData.start_date || !formData.end_date) {
       setPreview(null);
+      setPreviewError(null);
       return;
     }
 
     const timer = setTimeout(() => {
       calculatePreview();
-    }, 300); // Debounce 300ms
+    }, 300);
 
     return () => clearTimeout(timer);
   }, [formData.leave_type_id, formData.start_date, formData.end_date, formData.half_day]);
 
   const calculatePreview = async () => {
+    // Validate required fields
+    if (!formData.leave_type_id || !formData.start_date || !formData.end_date) {
+      setPreview(null);
+      setPreviewError(null);
+      return;
+    }
+
+    // Validate date order BEFORE calling API
+    if (new Date(formData.end_date) < new Date(formData.start_date)) {
+      setPreview(null);
+      setPreviewError(null);
+      return;
+    }
+
     try {
       setIsCalculating(true);
-      const res = await apiClient.post("/api/v1/leaves/preview", {
-        leave_type_id: formData.leave_type_id,
+      setPreviewError(null);
+      
+      const payload = {
+        leave_type_id: parseInt(formData.leave_type_id),
         start_date: formData.start_date,
         end_date: formData.end_date,
         half_day: formData.half_day,
-      });
+      };
+      
+      const res = await apiClient.post("/api/v1/leaves/preview", payload);
       setPreview(res.data);
+      setPreviewError(null);
     } catch (error) {
-      console.error("Preview calculation failed:", error);
+      // Silently handle preview errors - don't log to console as these are expected
+      // (e.g., overlapping leaves, validation errors are normal user scenarios)
+      
+      // Extract meaningful error message for UI display
+      const errorMessage = error?.response?.data?.message || 
+                          error?.response?.data?.error ||
+                          "Unable to calculate leave duration";
+      
+      setPreviewError(errorMessage);
       setPreview(null);
+      
+      // Only log unexpected errors (non-422 status codes)
+      if (error?.response?.status && error.response.status !== 422) {
+        console.error("Unexpected preview error:", error);
+      }
     } finally {
       setIsCalculating(false);
     }
@@ -150,11 +186,15 @@ export default function ApplyLeaveDialog({
 
   const applyMutation = useMutation({
     mutationFn: async (payload) => {
-      return apiClient.post("/api/v1/leaves", payload);
+      const requestPayload = {
+        ...payload,
+        leave_type_id: parseInt(payload.leave_type_id)
+      };
+      return apiClient.post("/api/v1/leaves", requestPayload);
     },
     onSuccess: () => {
-      toast.success("Leave application submitted", {
-        description: "Your request will be sent for approval",
+      toast.success("Leave Application Submitted", {
+        description: "Your leave request has been sent for approval"
       });
       qc.invalidateQueries(["my-leaves"]);
       qc.invalidateQueries(["leave-balances"]);
@@ -162,21 +202,31 @@ export default function ApplyLeaveDialog({
     },
     onError: (error) => {
       const message =
-        error?.response?.data?.message || "Failed to submit leave application";
-      toast.error("Application failed", {
-        description: message,
+        error?.response?.data?.message || 
+        error?.response?.data?.error ||
+        "Failed to submit leave application";
+      
+      toast.error("Submission Failed", { 
+        description: message 
       });
     },
   });
 
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+    
+    // Clear related errors
     if (errors[field]) {
       setErrors((prev) => {
         const newErrors = { ...prev };
         delete newErrors[field];
         return newErrors;
       });
+    }
+    
+    // Clear preview error when user makes changes
+    if (field === 'start_date' || field === 'end_date') {
+      setPreviewError(null);
     }
   };
 
@@ -197,7 +247,7 @@ export default function ApplyLeaveDialog({
 
     if (formData.start_date && formData.end_date) {
       if (new Date(formData.end_date) < new Date(formData.start_date)) {
-        newErrors.end_date = "End date must be after start date";
+        newErrors.end_date = "End date must be on or after start date";
       }
     }
 
@@ -210,8 +260,13 @@ export default function ApplyLeaveDialog({
       const balanceInfo = getBalanceInfo(selectedType.id);
       
       if (preview.days > balanceInfo.available) {
-        newErrors.leave_type_id = `Insufficient balance. Need ${preview.days} days but only ${balanceInfo.available} available.`;
+        newErrors.leave_type_id = `Insufficient balance. Need ${preview.days} day${preview.days !== 1 ? 's' : ''} but only ${balanceInfo.available.toFixed(1)} available.`;
       }
+    }
+
+    // Don't allow submission if preview failed with overlap error
+    if (previewError) {
+      newErrors.general = previewError;
     }
 
     setErrors(newErrors);
@@ -223,49 +278,46 @@ export default function ApplyLeaveDialog({
     applyMutation.mutate(formData);
   };
 
-  // Debug: Log when component renders
-  console.log("ApplyLeaveDialog render:", {
-    leaveTypesCount: leaveTypes.length,
-    balancesCount: balances.length,
-    paidCount: paidLeaves.length,
-    unpaidCount: unpaidLeaves.length,
-  });
-
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[650px] max-h-[95vh] overflow-y-auto">
-        <DialogHeader className="space-y-2">
-          <DialogTitle className="flex items-center gap-2 text-xl">
-            <Calendar className="h-6 w-6 text-blue-600" />
-            Apply for Leave
+      <DialogContent className="sm:max-w-[650px] max-h-[90vh] overflow-y-auto">
+        <DialogHeader className="border-b pb-4">
+          <DialogTitle className="flex items-center gap-2 text-lg">
+            <div className="p-2 bg-blue-50 rounded-lg">
+              <Calendar className="h-5 w-5 text-blue-600" />
+            </div>
+            <div>
+              <div className="font-semibold">Apply for Leave</div>
+              <div className="text-xs font-normal text-muted-foreground mt-0.5">
+                Submit your leave request for manager approval
+              </div>
+            </div>
           </DialogTitle>
-          <DialogDescription className="text-sm">
-            Submit a leave application for manager approval
-          </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-5 py-4">
-          {/* Debug Info (Development only) */}
-          {process.env.NODE_ENV === 'development' && (
-            <Alert className="bg-purple-50 border-purple-200">
-              <Info className="h-4 w-4 text-purple-600" />
-              <AlertDescription className="text-xs text-purple-900">
-                <strong>Debug:</strong> {leaveTypes.length} leave types loaded, {balances.length} balances
+        <div className="space-y-5 py-1">
+          {/* General Error Alert */}
+          {errors.general && (
+            <Alert variant="destructive" className="border-red-200 bg-red-50">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription className="text-xs font-medium">
+                {errors.general}
               </AlertDescription>
             </Alert>
           )}
 
           {/* Leave Type Selection */}
-          <div className="space-y-3">
-            <Label className="text-sm font-semibold">
-              Leave Type <span className="text-red-500">*</span>
+          <div className="space-y-2.5">
+            <Label className="text-sm font-semibold flex items-center gap-1.5">
+              Select Leave Type 
+              <span className="text-red-500">*</span>
             </Label>
 
             {leaveTypes.length === 0 ? (
-              <Alert variant="destructive">
+              <Alert variant="destructive" className="py-2.5">
                 <AlertCircle className="h-4 w-4" />
-                <AlertDescription>
-                  No leave types available. Please contact HR.
+                <AlertDescription className="text-xs">
+                  No leave types configured. Please contact HR.
                 </AlertDescription>
               </Alert>
             ) : (
@@ -273,9 +325,13 @@ export default function ApplyLeaveDialog({
                 {/* Paid Leaves */}
                 {paidLeaves.length > 0 && (
                   <div className="space-y-2">
-                    <p className="text-xs font-medium text-slate-600 uppercase tracking-wide">
-                      Paid Leaves
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-300 to-transparent" />
+                      <p className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider px-2">
+                        Paid Leaves
+                      </p>
+                      <div className="h-px flex-1 bg-gradient-to-r from-transparent via-slate-300 to-transparent" />
+                    </div>
                     <div className="grid gap-2">
                       {paidLeaves.map((type) => {
                         const balanceInfo = getBalanceInfo(type.id);
@@ -289,49 +345,63 @@ export default function ApplyLeaveDialog({
                             onClick={() => hasBalance && handleChange("leave_type_id", type.id.toString())}
                             disabled={!hasBalance}
                             className={cn(
-                              "w-full p-4 rounded-lg border-2 text-left transition-all",
-                              isSelected && "border-blue-500 bg-blue-50 ring-2 ring-blue-200",
-                              !isSelected && "border-slate-200 hover:border-slate-300 hover:bg-slate-50",
-                              !hasBalance && "opacity-50 cursor-not-allowed"
+                              "w-full p-3 rounded-lg border-2 text-left transition-all",
+                              isSelected && "border-blue-500 bg-blue-50 shadow-md ring-2 ring-blue-100",
+                              !isSelected && hasBalance && "border-slate-200 hover:border-blue-300 hover:bg-slate-50",
+                              !hasBalance && "opacity-40 cursor-not-allowed bg-slate-50"
                             )}
                           >
                             <div className="flex items-start justify-between gap-3">
                               <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-1 flex-wrap">
-                                  <h4 className="font-semibold text-slate-900">{type.name}</h4>
-                                  <Badge variant="outline" className="text-xs">
+                                <div className="flex items-center gap-2 mb-1.5">
+                                  <span className="font-semibold text-sm text-slate-900">
+                                    {type.name}
+                                  </span>
+                                  <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 h-5 font-semibold">
                                     {type.code}
                                   </Badge>
                                   {type.allow_half_day && (
-                                    <Badge variant="secondary" className="text-xs">
+                                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0.5 h-5">
                                       Half-day
                                     </Badge>
                                   )}
                                 </div>
                                 
-                                <div className="flex items-center gap-3 text-xs text-muted-foreground mt-2 flex-wrap">
-                                  <span className={cn(
-                                    "flex items-center gap-1",
-                                    hasBalance ? "text-emerald-600" : "text-red-600"
-                                  )}>
-                                    <CheckCircle className="h-3 w-3" />
-                                    Available: <strong>{balanceInfo.available}</strong>
-                                  </span>
-                                  <span className="flex items-center gap-1">
-                                    <TrendingUp className="h-3 w-3 text-blue-500" />
-                                    Total: {balanceInfo.total}
-                                  </span>
-                                  {balanceInfo.pending > 0 && (
-                                    <span className="flex items-center gap-1 text-amber-600">
-                                      <Clock className="h-3 w-3" />
-                                      Pending: {balanceInfo.pending}
+                                <div className="flex items-center gap-3 text-[11px]">
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-muted-foreground">Available:</span>
+                                    <span className={cn(
+                                      "font-semibold",
+                                      hasBalance ? "text-emerald-600" : "text-red-600"
+                                    )}>
+                                      {balanceInfo.available.toFixed(1)}
                                     </span>
+                                  </div>
+                                  <span className="text-slate-300">|</span>
+                                  <div className="flex items-center gap-1">
+                                    <span className="text-muted-foreground">Total:</span>
+                                    <span className="font-medium text-slate-700">
+                                      {balanceInfo.total.toFixed(1)}
+                                    </span>
+                                  </div>
+                                  {balanceInfo.pending > 0 && (
+                                    <>
+                                      <span className="text-slate-300">|</span>
+                                      <div className="flex items-center gap-1">
+                                        <span className="text-muted-foreground">Pending:</span>
+                                        <span className="font-medium text-amber-600">
+                                          {balanceInfo.pending.toFixed(1)}
+                                        </span>
+                                      </div>
+                                    </>
                                   )}
                                 </div>
                               </div>
                               
                               {isSelected && (
-                                <CheckCircle className="h-5 w-5 text-blue-600 flex-shrink-0" />
+                                <div className="flex-shrink-0">
+                                  <CheckCircle2 className="h-5 w-5 text-blue-600" />
+                                </div>
                               )}
                             </div>
                           </button>
@@ -344,9 +414,13 @@ export default function ApplyLeaveDialog({
                 {/* Unpaid Leaves */}
                 {unpaidLeaves.length > 0 && (
                   <div className="space-y-2">
-                    <p className="text-xs font-medium text-slate-600 uppercase tracking-wide">
-                      Unpaid Leaves
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <div className="h-px flex-1 bg-gradient-to-r from-transparent via-amber-300 to-transparent" />
+                      <p className="text-[11px] font-semibold text-amber-700 uppercase tracking-wider px-2">
+                        Unpaid Leaves
+                      </p>
+                      <div className="h-px flex-1 bg-gradient-to-r from-transparent via-amber-300 to-transparent" />
+                    </div>
                     <div className="grid gap-2">
                       {unpaidLeaves.map((type) => {
                         const isSelected = formData.leave_type_id === type.id.toString();
@@ -357,29 +431,33 @@ export default function ApplyLeaveDialog({
                             type="button"
                             onClick={() => handleChange("leave_type_id", type.id.toString())}
                             className={cn(
-                              "w-full p-4 rounded-lg border-2 text-left transition-all",
-                              isSelected && "border-amber-500 bg-amber-50 ring-2 ring-amber-200",
-                              !isSelected && "border-slate-200 hover:border-slate-300 hover:bg-slate-50"
+                              "w-full p-3 rounded-lg border-2 text-left transition-all",
+                              isSelected && "border-amber-500 bg-amber-50 shadow-md ring-2 ring-amber-100",
+                              !isSelected && "border-slate-200 hover:border-amber-300 hover:bg-slate-50"
                             )}
                           >
                             <div className="flex items-start justify-between gap-3">
                               <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-1 flex-wrap">
-                                  <h4 className="font-semibold text-slate-900">{type.name}</h4>
-                                  <Badge variant="outline" className="text-xs border-amber-300 text-amber-700">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="font-semibold text-sm text-slate-900">
+                                    {type.name}
+                                  </span>
+                                  <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 h-5 border-amber-400 text-amber-700 font-semibold">
                                     {type.code}
                                   </Badge>
-                                  <Badge variant="destructive" className="text-xs">
+                                  <Badge className="text-[10px] px-1.5 py-0.5 h-5 bg-amber-500 hover:bg-amber-600">
                                     Unpaid
                                   </Badge>
                                 </div>
-                                <p className="text-xs text-muted-foreground mt-1">
-                                  No balance required - This leave will not be paid
+                                <p className="text-[11px] text-muted-foreground">
+                                  No balance deduction • Unpaid leave
                                 </p>
                               </div>
                               
                               {isSelected && (
-                                <CheckCircle className="h-5 w-5 text-amber-600 flex-shrink-0" />
+                                <div className="flex-shrink-0">
+                                  <CheckCircle2 className="h-5 w-5 text-amber-600" />
+                                </div>
                               )}
                             </div>
                           </button>
@@ -392,9 +470,9 @@ export default function ApplyLeaveDialog({
             )}
 
             {errors.leave_type_id && (
-              <Alert variant="destructive">
+              <Alert variant="destructive" className="py-2 border-red-200 bg-red-50">
                 <AlertCircle className="h-4 w-4" />
-                <AlertDescription className="text-sm">
+                <AlertDescription className="text-xs font-medium">
                   {errors.leave_type_id}
                 </AlertDescription>
               </Alert>
@@ -405,10 +483,10 @@ export default function ApplyLeaveDialog({
 
           {/* Date Range */}
           <div className="space-y-3">
-            <Label className="text-sm font-semibold">Leave Period</Label>
+            <Label className="text-sm font-semibold">Leave Duration</Label>
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="start_date" className="text-xs">
+              <div className="space-y-1.5">
+                <Label htmlFor="start_date" className="text-xs text-muted-foreground font-medium">
                   Start Date <span className="text-red-500">*</span>
                 </Label>
                 <Input
@@ -417,15 +495,21 @@ export default function ApplyLeaveDialog({
                   value={formData.start_date}
                   onChange={(e) => handleChange("start_date", e.target.value)}
                   min={new Date().toISOString().split("T")[0]}
-                  className={cn(errors.start_date && "border-red-500")}
+                  className={cn(
+                    "text-sm h-10 border-2",
+                    errors.start_date ? "border-red-500 focus-visible:ring-red-500" : "border-slate-200 focus-visible:border-blue-500"
+                  )}
                 />
                 {errors.start_date && (
-                  <p className="text-xs text-red-600">{errors.start_date}</p>
+                  <p className="text-[10px] text-red-600 font-medium flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
+                    {errors.start_date}
+                  </p>
                 )}
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="end_date" className="text-xs">
+              <div className="space-y-1.5">
+                <Label htmlFor="end_date" className="text-xs text-muted-foreground font-medium">
                   End Date <span className="text-red-500">*</span>
                 </Label>
                 <Input
@@ -434,10 +518,16 @@ export default function ApplyLeaveDialog({
                   value={formData.end_date}
                   onChange={(e) => handleChange("end_date", e.target.value)}
                   min={formData.start_date || new Date().toISOString().split("T")[0]}
-                  className={cn(errors.end_date && "border-red-500")}
+                  className={cn(
+                    "text-sm h-10 border-2",
+                    errors.end_date ? "border-red-500 focus-visible:ring-red-500" : "border-slate-200 focus-visible:border-blue-500"
+                  )}
                 />
                 {errors.end_date && (
-                  <p className="text-xs text-red-600">{errors.end_date}</p>
+                  <p className="text-[10px] text-red-600 font-medium flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
+                    {errors.end_date}
+                  </p>
                 )}
               </div>
             </div>
@@ -445,106 +535,140 @@ export default function ApplyLeaveDialog({
 
           {/* Half Day Option */}
           {selectedType?.allow_half_day && (
-            <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
+            <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border-2 border-blue-100">
               <input
                 type="checkbox"
                 id="half_day"
                 checked={formData.half_day}
                 onChange={(e) => handleChange("half_day", e.target.checked)}
-                className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
               />
-              <Label htmlFor="half_day" className="cursor-pointer text-sm flex-1">
-                This is a half-day leave
+              <Label htmlFor="half_day" className="cursor-pointer text-xs font-medium flex-1 text-slate-700">
+                Apply as half-day leave
               </Label>
             </div>
           )}
 
-          {/* Preview */}
+          {/* Preview - IMPROVED with error handling */}
           {isCalculating ? (
-            <Alert className="border-slate-200 bg-slate-50">
-              <Clock className="h-4 w-4 text-slate-600 animate-spin" />
-              <AlertDescription className="text-sm text-slate-700">
-                Calculating duration...
+            <Alert className="py-3 border-slate-300 bg-slate-50">
+              <Loader2 className="h-4 w-4 text-slate-600 animate-spin" />
+              <AlertDescription className="text-xs text-slate-700 font-medium">
+                Calculating leave duration...
+              </AlertDescription>
+            </Alert>
+          ) : previewError ? (
+            <Alert variant="destructive" className="py-3 border-red-300 bg-red-50">
+              <CalendarX className="h-4 w-4 text-red-600" />
+              <AlertDescription className="text-xs text-red-900 font-medium">
+                <div className="font-semibold mb-0.5">Cannot apply leave</div>
+                <div>{previewError}</div>
               </AlertDescription>
             </Alert>
           ) : preview && (
-            <Alert className="border-blue-200 bg-blue-50">
-              <Info className="h-4 w-4 text-blue-600" />
-              <AlertDescription className="text-sm text-blue-900">
-                <div className="space-y-1">
-                  <p>
-                    <strong>Duration:</strong> {preview.days} day(s)
-                  </p>
-                  {selectedType?.is_paid && selectedBalance && (
-                    <p>
-                      <strong>Balance After:</strong>{" "}
-                      {(selectedBalance.total - selectedBalance.used - selectedBalance.pending - preview.days).toFixed(1)} days
-                    </p>
+            <Alert className="py-3 border-emerald-300 bg-gradient-to-r from-emerald-50 to-blue-50">
+              <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+              <AlertDescription className="text-xs">
+                <div className="flex items-center gap-4 flex-wrap">
+                  <div>
+                    <span className="text-muted-foreground">Duration:</span>
+                    <span className="ml-1.5 font-bold text-slate-900">
+                      {preview.days} day{preview.days !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                  {selectedType?.is_paid && (
+                    <>
+                      <span className="text-slate-300">|</span>
+                      <div>
+                        <span className="text-muted-foreground">Balance after:</span>
+                        <span className="ml-1.5 font-bold text-blue-600">
+                          {(getBalanceInfo(selectedType.id).available - (preview.days || 0)).toFixed(1)} days
+                        </span>
+                      </div>
+                    </>
                   )}
                 </div>
               </AlertDescription>
             </Alert>
           )}
 
-          <Separator />
-
           {/* Reason */}
           <div className="space-y-2">
             <Label htmlFor="reason" className="text-sm font-semibold">
-              Reason <span className="text-red-500">*</span>
+              Reason for Leave <span className="text-red-500">*</span>
             </Label>
             <Textarea
               id="reason"
               value={formData.reason}
               onChange={(e) => handleChange("reason", e.target.value)}
-              placeholder="Provide a detailed reason (minimum 10 characters)..."
+              placeholder="Please provide a detailed reason for your leave request (minimum 10 characters)..."
               rows={4}
-              className={cn("resize-none", errors.reason && "border-red-500")}
+              className={cn(
+                "resize-none text-sm border-2",
+                errors.reason ? "border-red-500 focus-visible:ring-red-500" : "border-slate-200"
+              )}
+              maxLength={1000}
             />
             <div className="flex items-center justify-between">
               {errors.reason ? (
-                <p className="text-xs text-red-600">{errors.reason}</p>
+                <p className="text-[10px] text-red-600 font-medium flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" />
+                  {errors.reason}
+                </p>
               ) : (
-                <span />
+                <span className="text-[10px] text-muted-foreground">
+                  Provide clear details to help with approval
+                </span>
               )}
-              <p className="text-xs text-muted-foreground">
-                {formData.reason.length} / 1000
+              <p className={cn(
+                "text-[10px] font-medium",
+                formData.reason.length < 10 ? "text-amber-600" : "text-emerald-600"
+              )}>
+                {formData.reason.length}/1000
               </p>
             </div>
           </div>
 
           {/* Info Banner */}
-          <Alert className="border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50">
-            <FileText className="h-4 w-4 text-blue-600" />
-            <AlertDescription className="text-xs text-blue-900">
-              <strong>Note:</strong> Application will be sent to your manager. 
-              Leave balance deducted only after approval.
+          <Alert className="py-3 border-blue-300 bg-gradient-to-r from-blue-50 via-indigo-50 to-blue-50">
+            <Info className="h-4 w-4 text-blue-600" />
+            <AlertDescription className="text-[11px] text-blue-900 font-medium leading-relaxed">
+              <div className="font-semibold mb-1">Important Information:</div>
+              <ul className="space-y-0.5 ml-1">
+                <li>• Your request will be sent to your reporting manager for approval</li>
+                <li>• Leave balance will only be deducted after final approval</li>
+                <li>• You will receive notifications about status changes</li>
+              </ul>
             </AlertDescription>
           </Alert>
         </div>
 
-        <DialogFooter className="gap-2">
+        <DialogFooter className="gap-2 sm:gap-2 border-t pt-4">
           <Button
             type="button"
             variant="outline"
             onClick={onClose}
             disabled={applyMutation.isPending}
+            className="h-10 text-sm font-medium"
           >
             Cancel
           </Button>
           <Button
             type="submit"
             onClick={handleSubmit}
-            disabled={applyMutation.isPending || !formData.leave_type_id || isCalculating}
-            className="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600"
+            disabled={applyMutation.isPending || !formData.leave_type_id || isCalculating || !!previewError}
+            className="h-10 text-sm font-semibold bg-blue-600 hover:bg-blue-700 min-w-[140px]"
           >
             {applyMutation.isPending ? (
               <>
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                 Submitting...
               </>
             ) : (
-              "Submit Application"
+              <>
+                <CheckCircle2 className="w-4 h-4 mr-2" />
+                Submit Request
+              </>
             )}
           </Button>
         </DialogFooter>

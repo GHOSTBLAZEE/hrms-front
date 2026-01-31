@@ -7,7 +7,6 @@ import LeaveCalendar from "./components/LeaveCalendar";
 import LeaveBalanceCards from "./components/LeaveBalanceCards";
 import LeaveHistoryTable from "./components/LeaveHistoryTable";
 import ApplyLeaveDialog from "./components/ApplyLeaveDialog";
-import TeamLeaveCalendar from "./components/TeamLeaveCalendar";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -15,11 +14,12 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { 
   Calendar as CalendarIcon, 
   Plus, 
-  AlertCircle, 
-  Users,
+  AlertCircle,
   History,
-  TrendingUp 
+  RefreshCw,
+  CalendarDays
 } from "lucide-react";
+import Link from "next/link";
 
 export default function LeavesPage() {
   const qc = useQueryClient();
@@ -29,8 +29,13 @@ export default function LeavesPage() {
 
   const isManager = user?.permissions?.includes("view team leaves");
 
-  // Fetch leave balances
-  const { data: balances = [], isLoading: balancesLoading } = useQuery({
+  // ✅ Fetch leave balances
+  const { 
+    data: balancesData, 
+    isLoading: balancesLoading,
+    error: balancesError,
+    refetch: refetchBalances 
+  } = useQuery({
     queryKey: ["leave-balances"],
     queryFn: async () => {
       const res = await apiClient.get("/api/v1/leaves/balances");
@@ -38,8 +43,13 @@ export default function LeavesPage() {
     },
   });
 
-  // Fetch leave history
-  const { data: leaves = [], isLoading: leavesLoading } = useQuery({
+  // ✅ Fetch leave history
+  const { 
+    data: leavesData, 
+    isLoading: leavesLoading,
+    error: leavesError,
+    refetch: refetchLeaves 
+  } = useQuery({
     queryKey: ["my-leaves"],
     queryFn: async () => {
       const res = await apiClient.get("/api/v1/leaves/mine");
@@ -47,8 +57,11 @@ export default function LeavesPage() {
     },
   });
 
-  //leave types fetch
-  const { data: leaveTypes = [], isLoading: leaveTypesLoading } = useQuery({
+  // ✅ Fetch leave types
+  const { 
+    data: leaveTypesData, 
+    isLoading: leaveTypesLoading 
+  } = useQuery({
     queryKey: ["leave-types"],
     queryFn: async () => {
       const res = await apiClient.get("/api/v1/leave-types");
@@ -56,32 +69,61 @@ export default function LeavesPage() {
     },
   });
 
-  // Fetch team leaves (if manager)
-  const { data: teamLeaves = [], isLoading: teamLeavesLoading } = useQuery({
-    queryKey: ["team-leaves"],
-    queryFn: async () => {
-      const res = await apiClient.get("/api/v1/leaves/team");
-      return res.data.data || [];
-    },
-    enabled: isManager,
-  });
+  // Extract data
+  const balances = balancesData || [];
+  const leaves = leavesData || [];
+  const leaveTypes = leaveTypesData || [];
 
   const handleApplyLeave = (date = null) => {
     setSelectedDate(date);
     setApplyDialogOpen(true);
   };
 
+  const handleRefresh = () => {
+    refetchBalances();
+    refetchLeaves();
+  };
+
+  // Loading state
   if (balancesLoading && leavesLoading) {
     return (
-      <div className="p-6 space-y-6">
-        <Skeleton className="h-8 w-64" />
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Skeleton className="h-32" />
-          <Skeleton className="h-32" />
-          <Skeleton className="h-32" />
-          <Skeleton className="h-32" />
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-50">
+        <div className="p-6 space-y-6 max-w-7xl mx-auto">
+          <Skeleton className="h-10 w-64" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Skeleton className="h-40" />
+            <Skeleton className="h-40" />
+            <Skeleton className="h-40" />
+            <Skeleton className="h-40" />
+          </div>
+          <Skeleton className="h-[600px] w-full" />
         </div>
-        <Skeleton className="h-[600px] w-full" />
+      </div>
+    );
+  }
+
+  // Error state
+  const hasError = balancesError || leavesError;
+  if (hasError) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-50">
+        <div className="p-6 max-w-7xl mx-auto">
+          <Alert variant="destructive" className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Failed to load leave data. Please try again.
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="ml-4"
+                onClick={handleRefresh}
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Retry
+              </Button>
+            </AlertDescription>
+          </Alert>
+        </div>
       </div>
     );
   }
@@ -92,24 +134,52 @@ export default function LeavesPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <CalendarIcon className="h-8 w-8 text-slate-600" />
-              <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
-                Leave Management
-              </h1>
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg shadow-lg">
+                <CalendarIcon className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
+                  My Leaves
+                </h1>
+                <p className="text-sm text-muted-foreground">
+                  Manage your time off and track leave balance
+                </p>
+              </div>
             </div>
-            <p className="text-muted-foreground">
-              Manage your time off and view team availability
-            </p>
           </div>
-          <Button
-            size="lg"
-            onClick={() => handleApplyLeave()}
-            className="bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 shadow-lg"
-          >
-            <Plus className="h-5 w-5 mr-2" />
-            Apply Leave
-          </Button>
+          
+          <div className="flex items-center gap-3">
+            {isManager && (
+              <Link href="/dashboard/leaves/team">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="gap-2"
+                >
+                  <CalendarDays className="h-4 w-4" />
+                  Team Calendar
+                </Button>
+              </Link>
+            )}
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={handleRefresh}
+              className="gap-2"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Refresh
+            </Button>
+            <Button
+              size="lg"
+              onClick={() => handleApplyLeave()}
+              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg gap-2"
+            >
+              <Plus className="h-5 w-5" />
+              Apply Leave
+            </Button>
+          </div>
         </div>
 
         {/* Leave Balance Cards */}
@@ -117,18 +187,18 @@ export default function LeavesPage() {
 
         {/* Main Content - Tabs */}
         <Tabs defaultValue="calendar" className="space-y-6">
-          <TabsList className="grid w-full max-w-2xl grid-cols-3">
-            <TabsTrigger value="calendar" className="gap-2">
+          <TabsList className="grid w-full max-w-md grid-cols-2 h-12 p-1 bg-slate-100">
+            <TabsTrigger 
+              value="calendar" 
+              className="gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm"
+            >
               <CalendarIcon className="h-4 w-4" />
               My Calendar
             </TabsTrigger>
-            {isManager && (
-              <TabsTrigger value="team" className="gap-2">
-                <Users className="h-4 w-4" />
-                Team Calendar
-              </TabsTrigger>
-            )}
-            <TabsTrigger value="history" className="gap-2">
+            <TabsTrigger 
+              value="history" 
+              className="gap-2 data-[state=active]:bg-white data-[state=active]:shadow-sm"
+            >
               <History className="h-4 w-4" />
               History
             </TabsTrigger>
@@ -141,16 +211,6 @@ export default function LeavesPage() {
               onApplyLeave={handleApplyLeave}
             />
           </TabsContent>
-
-          {/* Team Calendar Tab */}
-          {isManager && (
-            <TabsContent value="team" className="space-y-4">
-              <TeamLeaveCalendar 
-                teamLeaves={teamLeaves}
-                isLoading={teamLeavesLoading}
-              />
-            </TabsContent>
-          )}
 
           {/* History Tab */}
           <TabsContent value="history" className="space-y-4">
