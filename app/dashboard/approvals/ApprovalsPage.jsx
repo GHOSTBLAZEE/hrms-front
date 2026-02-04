@@ -192,8 +192,6 @@ export default function ApprovalsPage({
   // ✅ FIX: This now properly accepts the reason parameter from the drawer
   const rejectSingle = async (reason) => {
     if (!activeApprovalId) return;
-
-    console.log("🔴 rejectSingle called with reason:", reason);
     toastInfo("Rejecting request…");
 
     try {

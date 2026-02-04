@@ -54,6 +54,12 @@ export const menuData = {
           permissions: [],
           icon: UserCheck,
         },
+        {
+          title: "Shift Management",
+          url: "/dashboard/shifts",
+          permissions: [],
+          icon: Clock,
+        },
       ],
     },
     

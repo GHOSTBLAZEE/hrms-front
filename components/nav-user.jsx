@@ -1,6 +1,8 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 import {
   IconCreditCard,
   IconChevronDown,
@@ -9,6 +11,9 @@ import {
   IconUser,
   IconSettings,
 } from "@tabler/icons-react"
+import { toast } from "sonner"
+
+import { logoutApi } from "@/lib/authApi"
 
 import {
   Avatar,
@@ -46,38 +51,53 @@ import {
 
 export function NavUser({ user }) {
   const { isMobile } = useSidebar()
+  const router = useRouter()
+  const queryClient = useQueryClient()
   const [showLogoutDialog, setShowLogoutDialog] = useState(false)
-  const [isLoggingOut, setIsLoggingOut] = useState(false)
 
-  const handleLogout = async () => {
-    setIsLoggingOut(true)
+  // ✅ PROPER LOGOUT MUTATION
+  const logoutMutation = useMutation({
+    mutationFn: logoutApi,
     
-    try {
-      // Clear all auth tokens and session data
+    onSuccess: () => {
+      // Clear all React Query cache
+      queryClient.clear()
+      
+      // Clear local storage (if you store anything there)
       localStorage.removeItem('token')
       localStorage.removeItem('refreshToken')
       localStorage.removeItem('user')
       sessionStorage.clear()
       
-      // Clear all cookies (if you're using them)
-      document.cookie.split(";").forEach((c) => {
-        document.cookie = c
-          .replace(/^ +/, "")
-          .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/")
+      // Show success message
+      toast.success("Logged out successfully", {
+        description: "You have been signed out of your account"
       })
       
-      // If you have an API logout endpoint, call it
-      // await fetch('/api/auth/logout', { method: 'POST' })
-      
-      // Redirect to login page
-      window.location.href = '/login'
-    } catch (error) {
+      // Redirect to login
+      router.push('/login')
+    },
+    
+    onError: (error) => {
       console.error('Logout error:', error)
-      // Still redirect even if there's an error
-      window.location.href = '/login'
-    } finally {
-      setIsLoggingOut(false)
-    }
+      
+      // Even if API fails, clear frontend and redirect
+      queryClient.clear()
+      localStorage.clear()
+      sessionStorage.clear()
+      
+      toast.error("Logout completed", {
+        description: "Session ended. Redirecting to login..."
+      })
+      
+      // Still redirect to login
+      router.push('/login')
+    },
+  })
+
+  const handleLogout = () => {
+    setShowLogoutDialog(false)
+    logoutMutation.mutate()
   }
 
   const getInitials = (name) => {
@@ -153,19 +173,24 @@ export function NavUser({ user }) {
               <DropdownMenuSeparator />
 
               <DropdownMenuGroup>
-                <DropdownMenuItem className="cursor-pointer">
+                <DropdownMenuItem 
+                  className="cursor-pointer"
+                  onClick={() => router.push('/dashboard/profile')}
+                >
                   <IconUser className="mr-2 h-4 w-4" />
                   <span>Profile</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem className="cursor-pointer">
+                <DropdownMenuItem 
+                  className="cursor-pointer"
+                  onClick={() => router.push('/dashboard/settings')}
+                >
                   <IconSettings className="mr-2 h-4 w-4" />
                   <span>Settings</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem className="cursor-pointer">
-                  <IconCreditCard className="mr-2 h-4 w-4" />
-                  <span>Billing</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem className="cursor-pointer">
+                <DropdownMenuItem 
+                  className="cursor-pointer"
+                  onClick={() => router.push('/dashboard/notifications')}
+                >
                   <IconBell className="mr-2 h-4 w-4" />
                   <span>Notifications</span>
                 </DropdownMenuItem>
@@ -176,15 +201,17 @@ export function NavUser({ user }) {
               <DropdownMenuItem 
                 className="cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10"
                 onClick={() => setShowLogoutDialog(true)}
+                disabled={logoutMutation.isPending}
               >
                 <IconLogout className="mr-2 h-4 w-4" />
-                <span>Log out</span>
+                <span>{logoutMutation.isPending ? "Logging out..." : "Log out"}</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </SidebarMenuItem>
       </SidebarMenu>
 
+      {/* ✅ LOGOUT CONFIRMATION DIALOG */}
       <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -194,15 +221,22 @@ export function NavUser({ user }) {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isLoggingOut}>
+            <AlertDialogCancel disabled={logoutMutation.isPending}>
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleLogout}
-              disabled={isLoggingOut}
+              disabled={logoutMutation.isPending}
               className="bg-destructive hover:bg-destructive/90"
             >
-              {isLoggingOut ? "Logging out..." : "Log out"}
+              {logoutMutation.isPending ? (
+                <>
+                  <IconLogout className="mr-2 h-4 w-4 animate-spin" />
+                  Logging out...
+                </>
+              ) : (
+                "Log out"
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

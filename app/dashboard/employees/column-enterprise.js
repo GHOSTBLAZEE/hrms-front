@@ -211,6 +211,18 @@ export const columns = [
     },
   },
   {
+    accessorKey: "location.name",
+    header: "Location",
+    cell: ({ row }) => {
+      const location = row.original.location?.name;
+      return (
+        <div className="flex items-center gap-2">
+          <span className="text-sm">{location || "N/A"}</span>
+        </div>
+      );
+    },
+  },
+  {
     accessorKey: "employment_type",
     header: "Type",
     cell: ({ row }) => {
@@ -237,7 +249,50 @@ export const columns = [
       return getStatusBadge(status);
     },
   },
-  
+  {
+    accessorKey: "joined_at",
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="hover:bg-transparent p-0 h-auto font-semibold"
+        >
+          Join Date
+          <ArrowUpDown className="ml-2 h-4 w-4" />
+        </Button>
+      );
+    },
+    cell: ({ row }) => {
+      const date = row.original.joined_at;
+      if (!date) return <span className="text-muted-foreground">N/A</span>;
+      
+      const joinDate = new Date(date);
+      const today = new Date();
+      const monthsWorked = Math.floor(
+        (today - joinDate) / (1000 * 60 * 60 * 24 * 30)
+      );
+
+      return (
+        <div className="flex flex-col">
+          <span className="text-sm">
+            {new Date(date).toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            })}
+          </span>
+          <span className="text-xs text-muted-foreground">
+            {monthsWorked < 1
+              ? "< 1 month"
+              : monthsWorked === 1
+              ? "1 month"
+              : `${monthsWorked} months`}
+          </span>
+        </div>
+      );
+    },
+  },
   {
     id: "actions",
     header: () => <div className="text-right">Actions</div>,

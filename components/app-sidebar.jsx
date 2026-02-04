@@ -42,7 +42,7 @@ export function AppSidebar({ ...props }) {
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-semibold">HRMS</span>
-                  <span className="truncate text-xs">Nova System</span>
+                  <span className="truncate text-xs">SLDINFOSOFT System</span>
                 </div>
               </a>
             </SidebarMenuButton>

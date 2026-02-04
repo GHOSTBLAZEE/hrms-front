@@ -1,62 +1,117 @@
-import AttendanceTab from "../sections/AttendanceTab";
-import AuditTab from "../sections/AuditTab";
-import DocumentsTab from "../sections/DocumentsTab";
-import LeavesTab from "../sections/LeavesTab";
-import OverviewTab from "../sections/OverviewTab";
-import PayrollTab from "../sections/PayrollTab";
-import EmployeeSalaryTab from "./salary/EmployeeSalaryTab";
-import EmployeeStatutoryTab from "./statutory/EmployeeStatutoryTab";
+import {
+  User,
+  FileText,
+  GraduationCap,
+  Users,
+  Clock,
+  Calendar,
+  DollarSign,
+  Shield,
+  TrendingUp,
+  Package,
+  Receipt,
+  History,
+  GitBranch,
+  AlertTriangle,
+  CreditCard,
+  LogOut,
+} from "lucide-react";
 
-
-export const tabs = [
+export const employeeTabs = [
   {
-    key: "overview",
-    title: "Overview",
-    component: OverviewTab,
-    permissions: ["view employees"],
+    id: "overview",
+    label: "Overview",
+    icon: User,
+    description: "Basic information and quick stats",
   },
   {
-    key: "attendance",
-    title: "Attendance",
-    component: AttendanceTab,
-    permissions: ["view attendance"],
+    id: "documents",
+    label: "Documents",
+    icon: FileText,
+    description: "Personal documents and files",
   },
   {
-    key: "leaves",
-    title: "Leaves",
-    component: LeavesTab,
-    permissions: ["view leave"],
+    id: "education",
+    label: "Education",
+    icon: GraduationCap,
+    description: "Educational qualifications",
   },
   {
-    key: "salary",
-    title: "Salary",
-    component: EmployeeSalaryTab,
-    permissions: ["manage salary structures"],
+    id: "family",
+    label: "Family",
+    icon: Users,
+    description: "Family and emergency contacts",
   },
   {
-    key: "statutory",
-    title: "Statutory",
-    component: EmployeeStatutoryTab,
-    permissions: ["manage employees"],
-  },
-
-  {
-    key: "payroll",
-    title: "Payroll",
-    component: PayrollTab,
-    permissions: ["view payslips"],
+    id: "attendance",
+    label: "Attendance",
+    icon: Clock,
+    description: "Attendance records and punches",
   },
   {
-    key: "documents",
-    title: "Documents",
-    component: DocumentsTab,
-    permissions: ["view employee documents"],
+    id: "leaves",
+    label: "Leaves",
+    icon: Calendar,
+    description: "Leave balance and history",
   },
   {
-    key: "audit",
-    title: "Audit",
-    component: AuditTab,
-    permissions: ["update employees"],
+    id: "salary",
+    label: "Salary",
+    icon: DollarSign,
+    description: "Salary structure and revisions",
+  },
+  {
+    id: "statutory",
+    label: "Statutory",
+    icon: Shield,
+    description: "PF, ESI, and compliance",
+  },
+  {
+    id: "performance",
+    label: "Performance",
+    icon: TrendingUp,
+    description: "Performance reviews and ratings",
+  },
+  {
+    id: "assets",
+    label: "Assets",
+    icon: Package,
+    description: "Assigned assets and equipment",
+  },
+  {
+    id: "payroll",
+    label: "Payroll",
+    icon: Receipt,
+    description: "Payslips and earnings",
+  },
+  {
+    id: "loans",
+    label: "Loans",
+    icon: CreditCard,
+    description: "Loans and advances",
+  },
+  {
+    id: "warnings",
+    label: "Warnings",
+    icon: AlertTriangle,
+    description: "Warnings and disciplinary actions",
+  },
+  {
+    id: "timeline",
+    label: "Timeline",
+    icon: History,
+    description: "Employment history timeline",
+  },
+  {
+    id: "team",
+    label: "Team",
+    icon: GitBranch,
+    description: "Reporting structure",
+  },
+  {
+    id: "exit",
+    label: "Exit",
+    icon: LogOut,
+    description: "Exit process and clearance",
   },
 ];
-
