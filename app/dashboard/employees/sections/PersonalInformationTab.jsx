@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,15 +15,54 @@ export default function PersonalInformationTab({ employee, employeeId }) {
   const [isEditing, setIsEditing] = useState(false);
   const queryClient = useQueryClient();
 
+  // Helper to extract first/last name from full name if needed
+  const getNameParts = () => {
+    const firstName = employee.user?.first_name || employee.first_name;
+    const lastName = employee.user?.last_name || employee.last_name;
+    
+    // If we have both, use them
+    if (firstName && lastName) {
+      return { firstName, lastName };
+    }
+    
+    // If we have name field but not first/last, split it
+    const fullName = employee.user?.name || employee.name || "";
+    if (fullName && (!firstName || !lastName)) {
+      const parts = fullName.trim().split(' ');
+      return {
+        firstName: firstName || parts[0] || "",
+        lastName: lastName || parts.slice(1).join(' ') || ""
+      };
+    }
+    
+    return { firstName: firstName || "", lastName: lastName || "" };
+  };
+
+  const nameParts = getNameParts();
+
   const [formData, setFormData] = useState({
-    first_name: employee.first_name || "",
-    last_name: employee.last_name || "",
-    date_of_birth: employee.date_of_birth || "",
-    gender: employee.gender || "",
-    marital_status: employee.marital_status || "",
-    blood_group: employee.blood_group || "",
-    nationality: employee.nationality || "",
+    first_name: nameParts.firstName,
+    last_name: nameParts.lastName,
+    date_of_birth: employee.user?.date_of_birth || employee.date_of_birth || "",
+    gender: employee.user?.gender || employee.gender || "",
+    marital_status: employee.user?.marital_status || employee.marital_status || "",
+    blood_group: employee.user?.blood_group || employee.blood_group || "",
+    nationality: employee.user?.nationality || employee.nationality || "",
   });
+
+  // Update formData when employee data changes
+  useEffect(() => {
+    const nameParts = getNameParts();
+    setFormData({
+      first_name: nameParts.firstName,
+      last_name: nameParts.lastName,
+      date_of_birth: employee.user?.date_of_birth || employee.date_of_birth || "",
+      gender: employee.user?.gender || employee.gender || "",
+      marital_status: employee.user?.marital_status || employee.marital_status || "",
+      blood_group: employee.user?.blood_group || employee.blood_group || "",
+      nationality: employee.user?.nationality || employee.nationality || "",
+    });
+  }, [employee]);
 
   const updateEmployee = useMutation({
     mutationFn: async (data) => {
@@ -41,18 +80,37 @@ export default function PersonalInformationTab({ employee, employeeId }) {
   });
 
   const handleSave = () => {
-    updateEmployee.mutate(formData);
+    // Validate required fields
+    if (!formData.first_name?.trim() || !formData.last_name?.trim()) {
+      toast.error("First name and last name are required");
+      return;
+    }
+
+    // Always include first_name and last_name in personal info updates
+    const dataToSend = {
+      first_name: formData.first_name.trim(),
+      last_name: formData.last_name.trim(),
+      date_of_birth: formData.date_of_birth || null,
+      gender: formData.gender || null,
+      marital_status: formData.marital_status || null,
+      blood_group: formData.blood_group || null,
+      nationality: formData.nationality || null,
+    };
+
+    console.log("Sending data:", dataToSend);
+    updateEmployee.mutate(dataToSend);
   };
 
   const handleCancel = () => {
+    const nameParts = getNameParts();
     setFormData({
-      first_name: employee.first_name || "",
-      last_name: employee.last_name || "",
-      date_of_birth: employee.date_of_birth || "",
-      gender: employee.gender || "",
-      marital_status: employee.marital_status || "",
-      blood_group: employee.blood_group || "",
-      nationality: employee.nationality || "",
+      first_name: nameParts.firstName,
+      last_name: nameParts.lastName,
+      date_of_birth: employee.user?.date_of_birth || employee.date_of_birth || "",
+      gender: employee.user?.gender || employee.gender || "",
+      marital_status: employee.user?.marital_status || employee.marital_status || "",
+      blood_group: employee.user?.blood_group || employee.blood_group || "",
+      nationality: employee.user?.nationality || employee.nationality || "",
     });
     setIsEditing(false);
   };
@@ -93,7 +151,7 @@ export default function PersonalInformationTab({ employee, employeeId }) {
                 disabled={updateEmployee.isPending}
               >
                 <Save className="h-4 w-4 mr-2" />
-                Save
+                {updateEmployee.isPending ? "Saving..." : "Save"}
               </Button>
               <Button
                 onClick={handleCancel}
@@ -113,32 +171,36 @@ export default function PersonalInformationTab({ employee, employeeId }) {
           <div className="space-y-0">
             <InfoRow
               label="Full Name"
-              value={`${employee.first_name} ${employee.last_name}`}
+              value={
+                formData.first_name || formData.last_name
+                  ? `${formData.first_name} ${formData.last_name}`.trim()
+                  : employee?.user?.name || employee?.name || "Not provided"
+              }
               icon={User}
             />
             <InfoRow
               label="Date of Birth"
-              value={employee.date_of_birth ? new Date(employee.date_of_birth).toLocaleDateString() : null}
+              value={formData.date_of_birth ? new Date(formData.date_of_birth).toLocaleDateString() : null}
               icon={Calendar}
             />
             <InfoRow
               label="Gender"
-              value={employee.gender ? employee.gender.charAt(0).toUpperCase() + employee.gender.slice(1) : null}
+              value={formData.gender ? formData.gender.charAt(0).toUpperCase() + formData.gender.slice(1).replace('_', ' ') : null}
               icon={User}
             />
             <InfoRow
               label="Marital Status"
-              value={employee.marital_status ? employee.marital_status.charAt(0).toUpperCase() + employee.marital_status.slice(1) : null}
+              value={formData.marital_status ? formData.marital_status.charAt(0).toUpperCase() + formData.marital_status.slice(1) : null}
               icon={Heart}
             />
             <InfoRow
               label="Blood Group"
-              value={employee.blood_group}
+              value={formData.blood_group}
               icon={Droplet}
             />
             <InfoRow
               label="Nationality"
-              value={employee.nationality}
+              value={formData.nationality}
               icon={Globe}
             />
           </div>

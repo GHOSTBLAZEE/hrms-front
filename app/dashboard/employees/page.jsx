@@ -223,7 +223,7 @@ export default function EmployeesPage() {
       });
     }
   };
-
+console.log(employees);
   /* =========================================================
    | Handle Import
    |========================================================= */
@@ -315,6 +315,7 @@ export default function EmployeesPage() {
       </div>
 
       {/* Enhanced DataTable with Filters */}
+      
       <DataTable
         columns={columns}
         data={employees}

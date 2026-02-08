@@ -71,11 +71,16 @@ export default function ApprovalTemplatesPage() {
   }, [template?.id]);
 
   /* -------------------------------
-   | Track changes
-   |--------------------------------*/
+  | Track changes - FIXED VERSION
+  |--------------------------------*/
   useEffect(() => {
-    if (!template?.steps) return;
+    // ✅ NEW: If no template exists, any steps = changes
+    if (!template?.steps) {
+      setHasChanges(steps.length > 0);
+      return;
+    }
     
+    // ✅ EXISTING: Compare with original template
     const originalSteps = serializeSteps(normalizeSteps(template.steps));
     const currentSteps = serializeSteps(steps);
     

@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Edit, Save, X, CreditCard, Building, DollarSign, Trash2, Star } from "lucide-react";
+import { Edit, Save, X, CreditCard, Building, Trash2, Star, AlertCircle } from "lucide-react";
 import apiClient from "@/lib/apiClient";
 
 export default function BankingPayrollTab({ employee, employeeId }) {
@@ -35,7 +35,6 @@ export default function BankingPayrollTab({ employee, employeeId }) {
     branch_name: "",
     ifsc_code: "",
     account_type: "savings",
-    pan_number: "",
     is_primary: false,
     notes: "",
   });
@@ -52,19 +51,12 @@ export default function BankingPayrollTab({ employee, employeeId }) {
         branch_name: primaryBank.branch_name || "",
         ifsc_code: primaryBank.ifsc_code || "",
         account_type: primaryBank.account_type || "savings",
-        pan_number: primaryBank.pan_number || "",
         is_primary: primaryBank.is_primary || false,
         notes: primaryBank.notes || "",
       });
       setEditingId(primaryBank.id);
     }
   }, [isEditing, primaryBank]);
-
-  const validatePAN = (pan) => {
-    if (!pan) return true; // PAN is optional
-    const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
-    return panRegex.test(pan);
-  };
 
   const validateIFSC = (ifsc) => {
     const ifscRegex = /^[A-Z]{4}0[A-Z0-9]{6}$/;
@@ -98,10 +90,6 @@ export default function BankingPayrollTab({ employee, employeeId }) {
       newErrors.ifsc_code = "IFSC code is required";
     } else if (!validateIFSC(formData.ifsc_code)) {
       newErrors.ifsc_code = "Invalid IFSC format (e.g., HDFC0001234)";
-    }
-
-    if (formData.pan_number && !validatePAN(formData.pan_number)) {
-      newErrors.pan_number = "Invalid PAN format (e.g., ABCDE1234F)";
     }
 
     setErrors(newErrors);
@@ -203,7 +191,6 @@ export default function BankingPayrollTab({ employee, employeeId }) {
       branch_name: "",
       ifsc_code: "",
       account_type: "savings",
-      pan_number: "",
       is_primary: false,
       notes: "",
     });
@@ -281,7 +268,6 @@ export default function BankingPayrollTab({ employee, employeeId }) {
                 <InfoRow label="IFSC Code" value={primaryBank.ifsc_code} icon={CreditCard} />
                 <InfoRow label="Branch" value={primaryBank.branch_name} icon={Building} />
                 <InfoRow label="Account Type" value={primaryBank.account_type?.toUpperCase()} icon={CreditCard} />
-                <InfoRow label="PAN Number" value={primaryBank.pan_number} icon={DollarSign} />
               </div>
             ) : (
               <div className="text-center py-8 text-muted-foreground">
@@ -346,7 +332,10 @@ export default function BankingPayrollTab({ employee, employeeId }) {
                   className={errors.account_holder_name ? "border-red-500" : ""}
                 />
                 {errors.account_holder_name && (
-                  <p className="text-sm text-red-500">{errors.account_holder_name}</p>
+                  <p className="text-sm text-red-500 flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
+                    {errors.account_holder_name}
+                  </p>
                 )}
               </div>
 
@@ -359,7 +348,10 @@ export default function BankingPayrollTab({ employee, employeeId }) {
                   className={errors.bank_name ? "border-red-500" : ""}
                 />
                 {errors.bank_name && (
-                  <p className="text-sm text-red-500">{errors.bank_name}</p>
+                  <p className="text-sm text-red-500 flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
+                    {errors.bank_name}
+                  </p>
                 )}
               </div>
 
@@ -372,7 +364,10 @@ export default function BankingPayrollTab({ employee, employeeId }) {
                   className={errors.account_number ? "border-red-500" : ""}
                 />
                 {errors.account_number && (
-                  <p className="text-sm text-red-500">{errors.account_number}</p>
+                  <p className="text-sm text-red-500 flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
+                    {errors.account_number}
+                  </p>
                 )}
               </div>
 
@@ -386,7 +381,10 @@ export default function BankingPayrollTab({ employee, employeeId }) {
                   className={errors.ifsc_code ? "border-red-500" : ""}
                 />
                 {errors.ifsc_code && (
-                  <p className="text-sm text-red-500">{errors.ifsc_code}</p>
+                  <p className="text-sm text-red-500 flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
+                    {errors.ifsc_code}
+                  </p>
                 )}
               </div>
 
@@ -413,23 +411,6 @@ export default function BankingPayrollTab({ employee, employeeId }) {
                     <SelectItem value="current">Current</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>PAN Number</Label>
-                <Input
-                  value={formData.pan_number}
-                  onChange={(e) => handleInputChange('pan_number', e.target.value.toUpperCase())}
-                  placeholder="ABCDE1234F"
-                  maxLength={10}
-                  className={errors.pan_number ? "border-red-500" : ""}
-                />
-                {errors.pan_number && (
-                  <p className="text-sm text-red-500">{errors.pan_number}</p>
-                )}
-                <p className="text-xs text-muted-foreground">
-                  Format: 5 letters, 4 numbers, 1 letter (e.g., ABCDE1234F)
-                </p>
               </div>
 
               <div className="space-y-2 col-span-2">

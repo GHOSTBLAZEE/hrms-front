@@ -17,6 +17,10 @@ export const metadata = {
 };
 
 export default function RootLayout({ children }) {
+  useEffect(() => {
+    // Initialize session keep-alive when app mounts
+    initializeSessionKeepAlive();
+  }, []);
   return (
     <html lang="en">
       <body

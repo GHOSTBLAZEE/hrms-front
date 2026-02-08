@@ -62,7 +62,7 @@ import IdentificationTab from "../sections/IdentificationTab";
 import EducationExperienceTab from "../sections/EducationExperienceTab";
 import FamilyDetailsTab from "../sections/FamilyDetailsTab";
 import BankingPayrollTab from "../sections/BankingPayrollTab";
-import StatutoryComplianceTab from "../sections/StatutoryComplianceTab";
+import StatutoryTab from "../sections/StatutoryTab";
 import CareerManagementTab from "../sections/CareerManagementTab";
 import DocumentsTab from "../sections/DocumentsTab";
 import TrainingDevelopmentTab from "../sections/TrainingDevelopmentTab";
@@ -475,7 +475,7 @@ export default function EmployeeProfilePage({ employeeId }) {
           {activeTab === "education" && <EducationExperienceTab employee={employee} employeeId={employeeId} />}
           {activeTab === "family" && <FamilyDetailsTab employee={employee} employeeId={employeeId} />}
           {activeTab === "banking" && <BankingPayrollTab employee={employee} employeeId={employeeId} />}
-          {activeTab === "statutory" && <StatutoryComplianceTab employee={employee} employeeId={employeeId} />}
+          {activeTab === "statutory" && <StatutoryTab employee={employee} employeeId={employeeId} />}
           {activeTab === "career" && <CareerManagementTab employee={employee} employeeId={employeeId} />}
           {activeTab === "documents" && <DocumentsTab employee={employee} employeeId={employeeId} />}
           {activeTab === "training" && <TrainingDevelopmentTab employee={employee} employeeId={employeeId} />}
