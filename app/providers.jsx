@@ -1,5 +1,7 @@
 "use client";
 
+import { CompanyFeatureProvider } from "@/hooks/useCompanyFeature";
+import { FeatureFlagsProvider } from "@/hooks/useFeatureFlags";
 import { initializeEcho } from "@/lib/echo";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
@@ -22,8 +24,12 @@ export default function Providers({ children }) {
     };
   }, []);
   return (
-    <QueryClientProvider client={queryClient}>
-      {children}
-    </QueryClientProvider>
+    <FeatureFlagsProvider>
+      <CompanyFeatureProvider>
+        <QueryClientProvider client={queryClient}>
+          {children}
+        </QueryClientProvider>
+      </CompanyFeatureProvider>
+    </FeatureFlagsProvider>
   );
 }

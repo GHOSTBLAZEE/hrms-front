@@ -1,11 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SiteHeader } from "@/components/site-header";
+import { CommandPalette } from "@/components/command-palette";
 
 import { useAuth } from "@/hooks/useAuth";
 import { routePermissions } from "@/config/route-permissions";
@@ -14,7 +16,7 @@ export default function DashboardLayout({ children }) {
   const { user, permissions = [], isLoading } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
-  console.log(user, permissions);
+  const [commandOpen, setCommandOpen] = useState(false);
 
   useEffect(() => {
     if (isLoading) return;
@@ -46,15 +48,24 @@ export default function DashboardLayout({ children }) {
     <SidebarProvider
       style={{
         "--sidebar-width": "calc(var(--spacing) * 72)",
-        "--header-height": "calc(var(--spacing) * 12)",
+        "--header-height": "calc(var(--spacing) * 14)",
       }}
     >
+      {/* Clean Sidebar - Navigation Only */}
       <AppSidebar variant="inset" />
 
       <SidebarInset>
-        <SiteHeader />
-        <div className="flex flex-1 flex-col p-4">{children}</div>
+        {/* Enhanced Header - Search + Quick Actions + Notifications */}
+        <SiteHeader onOpenCommandPalette={() => setCommandOpen(true)} />
+        
+        {/* Main Content */}
+        <div className="flex flex-1 flex-col gap-4 p-4">
+          {children}
+        </div>
       </SidebarInset>
+
+      {/* Command Palette - Global Search */}
+      <CommandPalette open={commandOpen} onOpenChange={setCommandOpen} />
     </SidebarProvider>
   );
 }
