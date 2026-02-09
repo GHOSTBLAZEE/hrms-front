@@ -16,6 +16,7 @@ import apiClient from "@/lib/apiClient";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import CreateEmployeeDialog from "./employee-forms/CreateEmployeeDialog";
+import ImportEmployeeDialog from "./employee-forms/ImportEmployeeDialog"; // ✅ ADDED
 
 /* =========================================================
  | Employee Page Component with Laravel API Integration
@@ -29,7 +30,7 @@ export default function EmployeesPage() {
   
   // Dialog states
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false); // ✅ UNCOMMENTED
   
   // Filters
   const [statusFilter, setStatusFilter] = useState("all");
@@ -228,9 +229,7 @@ export default function EmployeesPage() {
    | Handle Import
    |========================================================= */
   const handleImport = () => {
-    setIsImportDialogOpen(true);
-    // OR if you have a separate import page:
-    // router.push("/dashboard/employees/import");
+    setIsImportDialogOpen(true); // ✅ ENABLED
   };
 
   /* =========================================================
@@ -255,6 +254,14 @@ export default function EmployeesPage() {
   };
 
   /* =========================================================
+   | Handle Import Success - Refresh List
+   |========================================================= */
+  const handleImportSuccess = () => {
+    fetchEmployees(); // Refresh employee list
+    setIsImportDialogOpen(false);
+  };
+
+  /* =========================================================
    | Clear All Filters
    |========================================================= */
   const clearFilters = () => {
@@ -272,9 +279,9 @@ export default function EmployeesPage() {
     typeFilter !== "all";
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="h-full flex flex-col p-6 gap-6">
       {/* Page Header */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between shrink-0">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Employees</h1>
           <p className="text-muted-foreground mt-1">
@@ -299,143 +306,145 @@ export default function EmployeesPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-4 shrink-0">
         <StatsCard
           title="Total Employees"
           value={isLoading ? "..." : employees.length}
           icon={Users}
           iconColor="text-blue-600"
-          bgColor="bg-blue-50"
+          bgColor="bg-blue-50 dark:bg-blue-950"
         />
         <StatsCard
           title="Active"
           value={isLoading ? "..." : employees.filter(e => e.status === "active").length}
           icon={Users}
           iconColor="text-green-600"
-          bgColor="bg-green-50"
+          bgColor="bg-green-50 dark:bg-green-950"
         />
         <StatsCard
           title="On Probation"
           value={isLoading ? "..." : employees.filter(e => e.status === "probation").length}
           icon={Users}
           iconColor="text-amber-600"
-          bgColor="bg-amber-50"
+          bgColor="bg-amber-50 dark:bg-amber-950"
         />
         <StatsCard
           title="Inactive"
           value={isLoading ? "..." : employees.filter(e => e.status === "inactive").length}
           icon={Users}
           iconColor="text-slate-600"
-          bgColor="bg-slate-50"
+          bgColor="bg-slate-50 dark:bg-slate-950"
         />
       </div>
 
       {/* Enhanced DataTable with Filters */}
-      <DataTable
-        columns={columns}
-        data={employees}
-        isLoading={isLoading}
-        error={error}
-        selectable={true}
-        onRowClick={handleRowClick}
-        globalSearchKeys={employeeSearchKeys}
-        searchPlaceholder="Search employees by name, email, code..."
-        emptyMessage="No employees found"
-        emptyDescription="Get started by adding your first employee or adjusting your filters."
-        pageSize={15}
-        rowSelection={rowSelection}
-        onRowSelectionChange={setRowSelection}
-        
-        // Custom filters in toolbar
-        filters={
-          <div className="flex items-center gap-2 flex-wrap">
-            {/* Status Filter */}
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[140px] h-9">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="probation">Probation</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
-                <SelectItem value="terminated">Terminated</SelectItem>
-              </SelectContent>
-            </Select>
+      <div className="flex-1 min-h-0">
+        <DataTable
+          columns={columns}
+          data={employees}
+          isLoading={isLoading}
+          error={error}
+          selectable={true}
+          onRowClick={handleRowClick}
+          globalSearchKeys={employeeSearchKeys}
+          searchPlaceholder="Search employees by name, email, code..."
+          emptyMessage="No employees found"
+          emptyDescription="Get started by adding your first employee or adjusting your filters."
+          pageSize={15}
+          rowSelection={rowSelection}
+          onRowSelectionChange={setRowSelection}
+          
+          // Custom filters in toolbar
+          filters={
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Status Filter */}
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-[140px] h-9">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="probation">Probation</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                  <SelectItem value="terminated">Terminated</SelectItem>
+                </SelectContent>
+              </Select>
 
-            {/* Department Filter */}
-            <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-              <SelectTrigger className="w-[160px] h-9">
-                <SelectValue placeholder="Department" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Departments</SelectItem>
-                {departments.map((dept) => (
-                  <SelectItem key={dept.id} value={dept.id.toString()}>
-                    {dept.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              {/* Department Filter */}
+              <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+                <SelectTrigger className="w-[160px] h-9">
+                  <SelectValue placeholder="Department" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Departments</SelectItem>
+                  {departments.map((dept) => (
+                    <SelectItem key={dept.id} value={dept.id.toString()}>
+                      {dept.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-            {/* Location Filter */}
-            <Select value={locationFilter} onValueChange={setLocationFilter}>
-              <SelectTrigger className="w-[160px] h-9">
-                <SelectValue placeholder="Location" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Locations</SelectItem>
-                {locations.map((loc) => (
-                  <SelectItem key={loc.id} value={loc.id.toString()}>
-                    {loc.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              {/* Location Filter */}
+              <Select value={locationFilter} onValueChange={setLocationFilter}>
+                <SelectTrigger className="w-[160px] h-9">
+                  <SelectValue placeholder="Location" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Locations</SelectItem>
+                  {locations.map((loc) => (
+                    <SelectItem key={loc.id} value={loc.id.toString()}>
+                      {loc.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-            {/* Employment Type Filter */}
-            <Select value={typeFilter} onValueChange={setTypeFilter}>
-              <SelectTrigger className="w-[140px] h-9">
-                <SelectValue placeholder="Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="full_time">Full Time</SelectItem>
-                <SelectItem value="part_time">Part Time</SelectItem>
-                <SelectItem value="contract">Contract</SelectItem>
-                <SelectItem value="intern">Intern</SelectItem>
-                <SelectItem value="consultant">Consultant</SelectItem>
-              </SelectContent>
-            </Select>
+              {/* Employment Type Filter */}
+              <Select value={typeFilter} onValueChange={setTypeFilter}>
+                <SelectTrigger className="w-[140px] h-9">
+                  <SelectValue placeholder="Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Types</SelectItem>
+                  <SelectItem value="full_time">Full Time</SelectItem>
+                  <SelectItem value="part_time">Part Time</SelectItem>
+                  <SelectItem value="contract">Contract</SelectItem>
+                  <SelectItem value="intern">Intern</SelectItem>
+                  <SelectItem value="consultant">Consultant</SelectItem>
+                </SelectContent>
+              </Select>
 
-            {/* Clear Filters Button */}
-            {hasActiveFilters && (
+              {/* Clear Filters Button */}
+              {hasActiveFilters && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearFilters}
+                  className="h-9 px-3"
+                >
+                  Clear filters
+                </Button>
+              )}
+            </div>
+          }
+          
+          // Custom toolbar actions
+          toolbarActions={
+            Object.keys(rowSelection).some(key => rowSelection[key]) && (
               <Button
-                variant="ghost"
+                variant="destructive"
                 size="sm"
-                onClick={clearFilters}
-                className="h-9 px-3"
+                onClick={handleBulkDelete}
+                className="h-9"
               >
-                Clear filters
+                Deactivate Selected ({Object.keys(rowSelection).filter(k => rowSelection[k]).length})
               </Button>
-            )}
-          </div>
-        }
-        
-        // Custom toolbar actions
-        toolbarActions={
-          Object.keys(rowSelection).some(key => rowSelection[key]) && (
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={handleBulkDelete}
-              className="h-9"
-            >
-              Deactivate Selected ({Object.keys(rowSelection).filter(k => rowSelection[k]).length})
-            </Button>
-          )
-        }
-      />
+            )
+          }
+        />
+      </div>
 
       {/* Create Employee Dialog */}
       <CreateEmployeeDialog
@@ -444,15 +453,12 @@ export default function EmployeesPage() {
         onSuccess={handleEmployeeCreated}
       />
 
-      {/* Import Dialog (if you have one) */}
-      {/* <ImportEmployeeDialog
+      {/* Import Dialog - ✅ ENABLED */}
+      <ImportEmployeeDialog
         open={isImportDialogOpen}
         onOpenChange={setIsImportDialogOpen}
-        onSuccess={() => {
-          fetchEmployees();
-          setIsImportDialogOpen(false);
-        }}
-      /> */}
+        onSuccess={handleImportSuccess}
+      />
     </div>
   );
 }

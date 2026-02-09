@@ -177,24 +177,6 @@ export const menuData = {
             category: "workforce",
           },
         },
-        {
-          id: "shift-management",
-          title: "Shift Management",
-          i18nKey: "menu.workforce.shifts",
-          url: "/dashboard/shifts",
-          permissions: ["manage shifts"],
-          icon: Clock,
-          breadcrumb: {
-            label: "Shifts",
-            parent: "Workforce",
-            path: ["Dashboard", "Workforce", "Shifts"],
-          },
-          searchKeywords: ["shifts", "schedules", "rosters", "timing", "work schedules"],
-          analytics: {
-            event: "manage_shifts",
-            category: "workforce",
-          },
-        },
       ],
     },
 
@@ -367,6 +349,36 @@ export const menuData = {
           analytics: {
             event: "view_team_timesheets",
             category: "time_tracking",
+          },
+        },
+        {
+          id: "shift-scheduling",
+          title: "Shift Scheduling",
+          i18nKey: "menu.time_tracking.scheduling",
+          url: "/dashboard/time-tracking/scheduling",
+          permissions: ["manage shifts", "view shifts"],
+          icon: Calendar,
+          description: "Manage shift assignments and rosters",
+          breadcrumb: {
+            label: "Shift Scheduling",
+            parent: "Time Tracking",
+            path: ["Dashboard", "Time Tracking", "Shift Scheduling"],
+          },
+          searchKeywords: ["shift scheduling", "rosters", "shift assignment", "employee scheduling", "coverage", "shift roster", "work schedules"],
+          notifications: {
+            type: "badge",
+            source: "unassigned_employees",
+            color: "amber",
+            showZero: false,
+            refreshInterval: 120000,
+          },
+          analytics: {
+            event: "view_shift_scheduling",
+            category: "time_tracking",
+          },
+          meta: {
+            pageTitle: "Shift Scheduling | HRMS",
+            description: "Manage employee shift assignments and rosters",
           },
         },
         {
@@ -1487,6 +1499,29 @@ export const menuData = {
           analytics: {
             event: "manage_designations",
             category: "settings",
+          },
+        },
+        {
+          id: "shift-templates",
+          title: "Shift Templates",
+          i18nKey: "menu.settings.shift_templates",
+          url: "/dashboard/settings/organization/shifts",
+          permissions: ["manage company settings", "manage shifts"],
+          icon: Clock,
+          description: "Define shift types and configurations",
+          breadcrumb: {
+            label: "Shift Templates",
+            parent: "Organization",
+            path: ["Dashboard", "Settings", "Organization", "Shift Templates"],
+          },
+          searchKeywords: ["shift templates", "shift types", "shift configuration", "work schedule templates", "shift patterns"],
+          analytics: {
+            event: "manage_shift_templates",
+            category: "settings",
+          },
+          meta: {
+            pageTitle: "Shift Templates | HRMS Settings",
+            description: "Configure shift types, timings, and break rules",
           },
         },
       ],

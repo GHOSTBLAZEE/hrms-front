@@ -54,12 +54,12 @@ export default function DashboardLayout({ children }) {
       {/* Clean Sidebar - Navigation Only */}
       <AppSidebar variant="inset" />
 
-      <SidebarInset>
+      <SidebarInset className="overflow-hidden">
         {/* Enhanced Header - Search + Quick Actions + Notifications */}
         <SiteHeader onOpenCommandPalette={() => setCommandOpen(true)} />
         
         {/* Main Content */}
-        <div className="flex flex-1 flex-col gap-4 p-4">
+        <div className="flex flex-1 flex-col gap-4">
           {children}
         </div>
       </SidebarInset>

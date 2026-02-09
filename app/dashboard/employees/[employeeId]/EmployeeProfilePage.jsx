@@ -159,7 +159,7 @@ export default function EmployeeProfilePage({ employeeId }) {
   const StatusIcon = statusConfig.icon;
 
   return (
-    <div className="space-y-4 pb-8">
+    <div className="h-full flex flex-col p-6 gap-6">
       {/* COMPACT HEADER */}
       <Card className="overflow-hidden">
         <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent">

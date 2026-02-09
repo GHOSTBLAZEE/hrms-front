@@ -27,7 +27,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
-import { useUpdateShift, useDeleteShift } from "../hooks/use-shifts"
+import { useDeleteShift, useUpdateShift } from "../hooks/use-shifts"
 
 export default function EditShiftDrawer({ open, onOpenChange, shift }) {
   const updateShift = useUpdateShift()

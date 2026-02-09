@@ -269,113 +269,116 @@ export function DataTable({
       )}
 
       {/* Table Container */}
-      <div className="rounded-lg border bg-card shadow-sm overflow-hidden">
-        {/* Error State */}
-        {error && (
-          <div className="flex items-center justify-center py-12 px-4">
-            <div className="text-center space-y-3">
-              <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
-                <X className="h-6 w-6 text-destructive" />
-              </div>
-              <div className="space-y-1">
-                <h3 className="font-semibold">Error Loading Data</h3>
-                <p className="text-sm text-muted-foreground max-w-sm">
-                  {error?.message || "An unexpected error occurred. Please try again."}
-                </p>
+      <div className="relative overflow-auto">
+        <div className="rounded-lg border bg-card shadow-sm overflow-hidden">
+          {/* Error State */}
+          {error && (
+            <div className="flex items-center justify-center py-12 px-4">
+              <div className="text-center space-y-3">
+                <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
+                  <X className="h-6 w-6 text-destructive" />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="font-semibold">Error Loading Data</h3>
+                  <p className="text-sm text-muted-foreground max-w-sm">
+                    {error?.message || "An unexpected error occurred. Please try again."}
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Loading State */}
-        {!error && isLoading && (
-          <div className="flex items-center justify-center py-12 px-4">
-            <div className="text-center space-y-3">
-              <Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" />
-              <p className="text-sm text-muted-foreground">Loading data...</p>
+          {/* Loading State */}
+          {!error && isLoading && (
+            <div className="flex items-center justify-center py-12 px-4">
+              <div className="text-center space-y-3">
+                <Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">Loading data...</p>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Table */}
-        {!error && !isLoading && (
-          <Table className={tableClassName}>
-            <TableHeader>
-              {table.getHeaderGroups().map((hg) => (
-                <TableRow key={hg.id} className="hover:bg-transparent">
-                  {hg.headers.map((h) => (
-                    <TableHead 
-                      key={h.id}
-                      className="bg-muted/50 font-semibold"
-                    >
-                      {h.isPlaceholder
-                        ? null
-                        : flexRender(
-                            h.column.columnDef.header,
-                            h.getContext()
-                          )}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              ))}
-            </TableHeader>
-
-            <TableBody>
-              {table.getRowModel().rows.length ? (
-                table.getRowModel().rows.map((row) => (
-                  <TableRow
-                    key={row.id}
-                    data-state={row.getIsSelected() && "selected"}
-                    className={cn(
-                      "transition-colors",
-                      onRowClick && "cursor-pointer hover:bg-muted/50"
-                    )}
-                    onClick={() => onRowClick?.(row.original)}
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext()
-                        )}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell
-                    colSpan={finalColumns.length}
-                    className="h-32 text-center"
-                  >
-                    <div className="flex flex-col items-center justify-center space-y-3 py-8">
-                      <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-                        <Search className="h-6 w-6 text-muted-foreground" />
-                      </div>
-                      <div className="space-y-1">
-                        <h3 className="font-semibold">{emptyMessage}</h3>
-                        <p className="text-sm text-muted-foreground max-w-sm">
-                          {emptyDescription}
-                        </p>
-                      </div>
-                      {globalFilter && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setGlobalFilter("")}
+          {/* Table */}
+          {!error && !isLoading && (
+            <div className="overflow-x-auto">
+              <Table className={tableClassName}>
+                <TableHeader>
+                  {table.getHeaderGroups().map((hg) => (
+                    <TableRow key={hg.id} className="hover:bg-transparent">
+                      {hg.headers.map((h) => (
+                        <TableHead 
+                          key={h.id}
+                          className="bg-muted/50 font-semibold"
                         >
-                          Clear filters
-                        </Button>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        )}
-      </div>
+                          {h.isPlaceholder
+                            ? null
+                            : flexRender(
+                                h.column.columnDef.header,
+                                h.getContext()
+                              )}
+                        </TableHead>
+                      ))}
+                    </TableRow>
+                  ))}
+                </TableHeader>
 
+                <TableBody>
+                  {table.getRowModel().rows.length ? (
+                    table.getRowModel().rows.map((row) => (
+                      <TableRow
+                        key={row.id}
+                        data-state={row.getIsSelected() && "selected"}
+                        className={cn(
+                          "transition-colors",
+                          onRowClick && "cursor-pointer hover:bg-muted/50"
+                        )}
+                        onClick={() => onRowClick?.(row.original)}
+                      >
+                        {row.getVisibleCells().map((cell) => (
+                          <TableCell key={cell.id}>
+                            {flexRender(
+                              cell.column.columnDef.cell,
+                              cell.getContext()
+                            )}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell
+                        colSpan={finalColumns.length}
+                        className="h-32 text-center"
+                      >
+                        <div className="flex flex-col items-center justify-center space-y-3 py-8">
+                          <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+                            <Search className="h-6 w-6 text-muted-foreground" />
+                          </div>
+                          <div className="space-y-1">
+                            <h3 className="font-semibold">{emptyMessage}</h3>
+                            <p className="text-sm text-muted-foreground max-w-sm">
+                              {emptyDescription}
+                            </p>
+                          </div>
+                          {globalFilter && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setGlobalFilter("")}
+                            >
+                              Clear filters
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </div>
+      </div>
       {/* Pagination */}
       {showPagination && !isLoading && !error && table.getRowModel().rows.length > 0 && (
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
