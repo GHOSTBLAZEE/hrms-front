@@ -42,24 +42,105 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-// ✅ Document type configuration with icons and colors
+// ✅ FIXED: Document type configuration - now uses lowercase with underscores
 const DOCUMENT_TYPES = {
-  "Resume": { icon: FileText, color: "blue", category: "recruitment" },
-  "Offer Letter": { icon: FileText, color: "emerald", category: "onboarding" },
-  "Appointment Letter": { icon: FileText, color: "purple", category: "onboarding" },
-  "Employment Contract": { icon: FileText, color: "indigo", category: "legal" },
-  "NDA": { icon: FileText, color: "red", category: "legal" },
-  "ID Proof": { icon: FileImage, color: "amber", category: "identity" },
-  "Address Proof": { icon: FileImage, color: "amber", category: "identity" },
-  "Educational Certificate": { icon: FileText, color: "cyan", category: "academic" },
-  "Experience Certificate": { icon: FileText, color: "teal", category: "academic" },
-  "Resignation Letter": { icon: FileText, color: "orange", category: "exit" },
-  "Relieving Letter": { icon: FileText, color: "slate", category: "exit" },
-  "Payslip": { icon: FileSpreadsheet, color: "green", category: "payroll" },
-  "Tax Documents": { icon: FileSpreadsheet, color: "violet", category: "tax" },
-  "Performance Review": { icon: FileText, color: "pink", category: "performance" },
-  "Warning Letter": { icon: FileText, color: "red", category: "disciplinary" },
-  "Other": { icon: File, color: "gray", category: "misc" },
+  // Keys changed from "Resume" to "resume", "Offer Letter" to "offer_letter", etc.
+  "resume": { 
+    label: "Resume/CV",
+    icon: FileText, 
+    color: "blue", 
+    category: "recruitment" 
+  },
+  "offer_letter": { 
+    label: "Offer Letter",
+    icon: FileText, 
+    color: "emerald", 
+    category: "onboarding" 
+  },
+  "appointment_letter": { 
+    label: "Appointment Letter",
+    icon: FileText, 
+    color: "purple", 
+    category: "onboarding" 
+  },
+  "employment_contract": { 
+    label: "Employment Contract",
+    icon: FileText, 
+    color: "indigo", 
+    category: "legal" 
+  },
+  "nda": { 
+    label: "NDA/Confidentiality",
+    icon: FileText, 
+    color: "red", 
+    category: "legal" 
+  },
+  "id_proof": { 
+    label: "ID Proof",
+    icon: FileImage, 
+    color: "amber", 
+    category: "identity" 
+  },
+  "address_proof": { 
+    label: "Address Proof",
+    icon: FileImage, 
+    color: "amber", 
+    category: "identity" 
+  },
+  "educational": { 
+    label: "Educational Certificate",
+    icon: FileText, 
+    color: "cyan", 
+    category: "academic" 
+  },
+  "experience": { 
+    label: "Experience Certificate",
+    icon: FileText, 
+    color: "teal", 
+    category: "academic" 
+  },
+  "resignation": { 
+    label: "Resignation Letter",
+    icon: FileText, 
+    color: "orange", 
+    category: "exit" 
+  },
+  "relieving_letter": { 
+    label: "Relieving Letter",
+    icon: FileText, 
+    color: "slate", 
+    category: "exit" 
+  },
+  "payslip": { 
+    label: "Payslip",
+    icon: FileSpreadsheet, 
+    color: "green", 
+    category: "payroll" 
+  },
+  "tax_documents": { 
+    label: "Tax Documents",
+    icon: FileSpreadsheet, 
+    color: "violet", 
+    category: "tax" 
+  },
+  "performance_review": { 
+    label: "Performance Review",
+    icon: FileText, 
+    color: "pink", 
+    category: "performance" 
+  },
+  "warning_letter": { 
+    label: "Warning Letter",
+    icon: FileText, 
+    color: "red", 
+    category: "disciplinary" 
+  },
+  "other": { 
+    label: "Other Documents",
+    icon: File, 
+    color: "gray", 
+    category: "misc" 
+  },
 };
 
 const CATEGORIES = {
@@ -124,7 +205,8 @@ export default function EnterpriseDocumentsTab({ employee, employeeId }) {
       DOCUMENT_TYPES[doc.document_type]?.category === selectedCategory;
     const matchesSearch = !searchQuery || 
       doc.document_type.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      doc.description?.toLowerCase().includes(searchQuery.toLowerCase());
+      doc.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      DOCUMENT_TYPES[doc.document_type]?.label?.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
   });
 
@@ -330,7 +412,7 @@ export default function EnterpriseDocumentsTab({ employee, employeeId }) {
 
   // Document Card Component
   const DocumentCard = ({ doc }) => {
-    const config = DOCUMENT_TYPES[doc.document_type] || DOCUMENT_TYPES["Other"];
+    const config = DOCUMENT_TYPES[doc.document_type] || DOCUMENT_TYPES["other"];
     const Icon = getFileIcon(doc.document_type, doc.mime_type);
     const isExpiringSoon = doc.expiry_date && new Date(doc.expiry_date) <= new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
     const isExpired = doc.expiry_date && new Date(doc.expiry_date) < new Date();
@@ -348,7 +430,7 @@ export default function EnterpriseDocumentsTab({ employee, employeeId }) {
               <div className="flex-1 min-w-0">
                 <div className="flex items-start gap-2 mb-2">
                   <h4 className="font-semibold text-base text-slate-900 truncate">
-                    {doc.document_type}
+                    {config.label || doc.document_type}
                   </h4>
                   <Badge variant="outline" className={`bg-${config.color}-50 text-${config.color}-700 border-${config.color}-200 flex-shrink-0`}>
                     {CATEGORIES[config.category]}
@@ -385,10 +467,10 @@ export default function EnterpriseDocumentsTab({ employee, employeeId }) {
                     <span>{formatFileSize(doc.file_size)}</span>
                   </div>
 
-                  {doc.uploaded_by && (
+                  {doc.uploader && (
                     <div className="flex items-center gap-1.5 text-slate-600">
                       <User className="h-3.5 w-3.5 text-slate-400" />
-                      <span className="truncate">{doc.uploaded_by.name}</span>
+                      <span className="truncate">{doc.uploader.name}</span>
                     </div>
                   )}
 
@@ -696,7 +778,7 @@ export default function EnterpriseDocumentsTab({ employee, employeeId }) {
                             <SelectItem key={type} value={type}>
                               <div className="flex items-center gap-2">
                                 <Icon className={`h-4 w-4 text-${config.color}-600`} />
-                                {type}
+                                {config.label}
                               </div>
                             </SelectItem>
                           );

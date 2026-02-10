@@ -26,6 +26,12 @@ import {
   Clock,
   Upload,
   Filter,
+  FileImage,
+  FileSpreadsheet,
+  File,
+  User,
+  Hash,
+  HardDrive,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import apiClient from "@/lib/apiClient";
@@ -50,7 +56,7 @@ export default function MyDocumentsPage() {
       }
 
       const params = new URLSearchParams();
-      if (typeFilter !== "all") params.append("type", typeFilter);
+      if (typeFilter !== "all") params.append("document_type", typeFilter);
 
       const response = await apiClient.get(
         `/api/v1/employees/${user.employee_id}/documents?${params}`
@@ -65,25 +71,51 @@ export default function MyDocumentsPage() {
   // Filter by search
   const filteredDocuments = documents.filter(
     (doc) =>
-      doc.name?.toLowerCase().includes(search.toLowerCase()) ||
+      doc.original_filename?.toLowerCase().includes(search.toLowerCase()) ||
       doc.description?.toLowerCase().includes(search.toLowerCase()) ||
-      doc.document_type?.toLowerCase().includes(search.toLowerCase())
+      doc.document_type?.toLowerCase().includes(search.toLowerCase()) ||
+      doc.document_number?.toLowerCase().includes(search.toLowerCase())
   );
 
-  // Document type configurations
+  // Document type configurations with proper icons
   const documentTypes = {
-    id_proof: { label: "ID Proof", icon: "🆔", color: "blue" },
-    educational: { label: "Educational", icon: "🎓", color: "purple" },
-    experience: { label: "Experience Letter", icon: "💼", color: "indigo" },
-    offer_letter: { label: "Offer Letter", icon: "📄", color: "green" },
-    appointment_letter: { label: "Appointment Letter", icon: "📋", color: "teal" },
-    resignation: { label: "Resignation", icon: "👋", color: "orange" },
-    tax_documents: { label: "Tax Documents", icon: "💰", color: "amber" },
-    other: { label: "Other", icon: "📎", color: "gray" },
+    id_proof: { label: "ID Proof", icon: FileImage, color: "amber" },
+    address_proof: { label: "Address Proof", icon: FileImage, color: "amber" },
+    educational: { label: "Educational Certificate", icon: FileText, color: "purple" },
+    experience: { label: "Experience Certificate", icon: FileText, color: "indigo" },
+    resume: { label: "Resume/CV", icon: FileText, color: "blue" },
+    offer_letter: { label: "Offer Letter", icon: FileText, color: "emerald" },
+    appointment_letter: { label: "Appointment Letter", icon: FileText, color: "teal" },
+    employment_contract: { label: "Employment Contract", icon: FileText, color: "indigo" },
+    nda: { label: "NDA/Confidentiality", icon: FileText, color: "red" },
+    resignation: { label: "Resignation Letter", icon: FileText, color: "orange" },
+    relieving_letter: { label: "Relieving Letter", icon: FileText, color: "slate" },
+    payslip: { label: "Payslip", icon: FileSpreadsheet, color: "green" },
+    tax_documents: { label: "Tax Documents", icon: FileSpreadsheet, color: "violet" },
+    performance_review: { label: "Performance Review", icon: FileText, color: "pink" },
+    warning_letter: { label: "Warning Letter", icon: FileText, color: "red" },
+    other: { label: "Other Documents", icon: File, color: "gray" },
   };
 
   const getDocumentTypeConfig = (type) => {
     return documentTypes[type] || documentTypes.other;
+  };
+
+  // Get file icon based on mime type
+  const getFileIcon = (mimeType) => {
+    if (!mimeType) return File;
+    if (mimeType.includes('image')) return FileImage;
+    if (mimeType.includes('spreadsheet') || mimeType.includes('excel')) return FileSpreadsheet;
+    if (mimeType.includes('pdf') || mimeType.includes('document')) return FileText;
+    return File;
+  };
+
+  // Format file size
+  const formatFileSize = (bytes) => {
+    if (!bytes) return 'Unknown';
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
   };
 
   // Check if document is expiring soon (within 30 days)
@@ -101,6 +133,7 @@ export default function MyDocumentsPage() {
     return new Date(expiryDate) < new Date();
   };
 
+  // ✅ FIXED: Download with correct filename
   const handleDownload = async (document) => {
     try {
       const response = await apiClient.get(
@@ -109,22 +142,38 @@ export default function MyDocumentsPage() {
       );
 
       const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement("a");
+      const link = window.document.createElement("a");
       link.href = url;
-      link.setAttribute("download", document.name);
-      document.body.appendChild(link);
+      link.setAttribute("download", document.original_filename || `document-${document.id}`);
+      window.document.body.appendChild(link);
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
 
-      toast.success("Document downloaded");
+      toast.success("Document downloaded successfully");
     } catch (error) {
+      console.error("Download error:", error);
       toast.error("Failed to download document");
     }
   };
 
-  const handleView = (document) => {
-    window.open(document.file_url, "_blank");
+  // ✅ FIXED: View in new tab
+  const handleView = async (document) => {
+    try {
+      const response = await apiClient.get(
+        `/api/v1/employees/${user.employee_id}/documents/${document.id}/download`,
+        { responseType: "blob" }
+      );
+
+      const blob = new Blob([response.data], { type: document.mime_type || 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      
+      toast.success("Opening document");
+    } catch (error) {
+      console.error("View error:", error);
+      toast.error("Failed to open document");
+    }
   };
 
   const handleDelete = (document) => {
@@ -190,52 +239,58 @@ export default function MyDocumentsPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
+        <Card className="border-l-4 border-l-blue-500">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Total Documents</p>
-                <p className="text-2xl font-bold">{documents.length}</p>
+                <p className="text-sm text-muted-foreground mb-1">Total Documents</p>
+                <p className="text-3xl font-bold text-blue-600">{documents.length}</p>
               </div>
-              <FileText className="h-8 w-8 text-blue-600 opacity-20" />
+              <div className="p-3 bg-blue-100 rounded-lg">
+                <FileText className="h-6 w-6 text-blue-600" />
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-l-4 border-l-amber-500">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Expiring Soon</p>
-                <p className="text-2xl font-bold text-amber-600">
+                <p className="text-sm text-muted-foreground mb-1">Expiring Soon</p>
+                <p className="text-3xl font-bold text-amber-600">
                   {documents.filter((d) => isExpiringSoon(d.expiry_date)).length}
                 </p>
               </div>
-              <Clock className="h-8 w-8 text-amber-600 opacity-20" />
+              <div className="p-3 bg-amber-100 rounded-lg">
+                <Clock className="h-6 w-6 text-amber-600" />
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-l-4 border-l-red-500">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Expired</p>
-                <p className="text-2xl font-bold text-red-600">
+                <p className="text-sm text-muted-foreground mb-1">Expired</p>
+                <p className="text-3xl font-bold text-red-600">
                   {documents.filter((d) => isExpired(d.expiry_date)).length}
                 </p>
               </div>
-              <AlertCircle className="h-8 w-8 text-red-600 opacity-20" />
+              <div className="p-3 bg-red-100 rounded-lg">
+                <AlertCircle className="h-6 w-6 text-red-600" />
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-l-4 border-l-green-500">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Valid</p>
-                <p className="text-2xl font-bold text-green-600">
+                <p className="text-sm text-muted-foreground mb-1">Valid</p>
+                <p className="text-3xl font-bold text-green-600">
                   {
                     documents.filter(
                       (d) => !d.expiry_date || (!isExpired(d.expiry_date) && !isExpiringSoon(d.expiry_date))
@@ -243,7 +298,9 @@ export default function MyDocumentsPage() {
                   }
                 </p>
               </div>
-              <CheckCircle className="h-8 w-8 text-green-600 opacity-20" />
+              <div className="p-3 bg-green-100 rounded-lg">
+                <CheckCircle className="h-6 w-6 text-green-600" />
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -263,16 +320,27 @@ export default function MyDocumentsPage() {
               />
             </div>
             <Select value={typeFilter} onValueChange={setTypeFilter}>
-              <SelectTrigger className="w-full sm:w-[200px]">
+              <SelectTrigger className="w-full sm:w-[250px]">
                 <SelectValue placeholder="Filter by type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                {Object.entries(documentTypes).map(([key, config]) => (
-                  <SelectItem key={key} value={key}>
-                    {config.icon} {config.label}
-                  </SelectItem>
-                ))}
+                <SelectItem value="all">
+                  <div className="flex items-center gap-2">
+                    <Filter className="h-4 w-4" />
+                    All Types
+                  </div>
+                </SelectItem>
+                {Object.entries(documentTypes).map(([key, config]) => {
+                  const Icon = config.icon;
+                  return (
+                    <SelectItem key={key} value={key}>
+                      <div className="flex items-center gap-2">
+                        <Icon className={`h-4 w-4 text-${config.color}-600`} />
+                        {config.label}
+                      </div>
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
           </div>
@@ -318,29 +386,35 @@ export default function MyDocumentsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredDocuments.map((document) => {
             const typeConfig = getDocumentTypeConfig(document.document_type);
+            const FileIcon = getFileIcon(document.mime_type);
+            const TypeIcon = typeConfig.icon;
             const expired = isExpired(document.expiry_date);
             const expiringSoon = isExpiringSoon(document.expiry_date);
 
             return (
               <Card
                 key={document.id}
-                className={`group hover:shadow-lg transition-all ${
+                className={`group hover:shadow-lg transition-all border-l-4 ${
                   expired
-                    ? "border-red-200 bg-red-50/30"
+                    ? "border-l-red-500 bg-red-50/30"
                     : expiringSoon
-                    ? "border-amber-200 bg-amber-50/30"
-                    : ""
+                    ? "border-l-amber-500 bg-amber-50/30"
+                    : `border-l-${typeConfig.color}-500`
                 }`}
               >
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between gap-2">
+                <CardContent className="p-6">
+                  {/* Header with Icon */}
+                  <div className="flex items-start gap-4 mb-4">
+                    <div className={`p-3 rounded-lg bg-${typeConfig.color}-50 border-2 border-${typeConfig.color}-200 flex-shrink-0`}>
+                      <TypeIcon className={`h-6 w-6 text-${typeConfig.color}-600`} />
+                    </div>
                     <div className="flex-1 min-w-0">
-                      <CardTitle className="text-base line-clamp-1">
-                        {document.name}
-                      </CardTitle>
-                      <div className="flex items-center gap-2 mt-2">
-                        <Badge variant="outline" className="text-xs">
-                          {typeConfig.icon} {typeConfig.label}
+                      <h3 className="font-semibold text-base text-slate-900 mb-1 line-clamp-1">
+                        {document.original_filename || 'Untitled Document'}
+                      </h3>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge variant="outline" className={`text-xs bg-${typeConfig.color}-50 text-${typeConfig.color}-700 border-${typeConfig.color}-200`}>
+                          {typeConfig.label}
                         </Badge>
                         {expired && (
                           <Badge variant="destructive" className="text-xs">
@@ -348,58 +422,92 @@ export default function MyDocumentsPage() {
                           </Badge>
                         )}
                         {expiringSoon && !expired && (
-                          <Badge variant="outline" className="text-xs text-amber-600 border-amber-200">
+                          <Badge className="text-xs bg-amber-100 text-amber-800 border-amber-200">
                             Expiring Soon
                           </Badge>
                         )}
                       </div>
                     </div>
                   </div>
-                </CardHeader>
 
-                <CardContent className="space-y-3">
                   {/* Description */}
                   {document.description && (
-                    <p className="text-sm text-muted-foreground line-clamp-2">
+                    <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
                       {document.description}
                     </p>
                   )}
 
-                  {/* Metadata */}
-                  <div className="space-y-1.5 text-xs text-muted-foreground">
+                  {/* Metadata Grid */}
+                  <div className="grid grid-cols-2 gap-3 text-xs mb-4">
                     {document.document_number && (
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-medium">Number:</span>
-                        <span>{document.document_number}</span>
+                      <div className="flex items-center gap-1.5 text-slate-600">
+                        <Hash className="h-3.5 w-3.5 text-slate-400" />
+                        <span className="truncate font-mono">{document.document_number}</span>
                       </div>
                     )}
-                    {document.issue_date && (
-                      <div className="flex items-center gap-1.5">
-                        <Calendar className="h-3 w-3" />
-                        <span>
-                          Issued: {new Date(document.issue_date).toLocaleDateString()}
-                        </span>
-                      </div>
-                    )}
+                    
+                    <div className="flex items-center gap-1.5 text-slate-600">
+                      <HardDrive className="h-3.5 w-3.5 text-slate-400" />
+                      <span>{formatFileSize(document.file_size)}</span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 text-slate-600">
+                      <Calendar className="h-3.5 w-3.5 text-slate-400" />
+                      <span className="truncate">
+                        {new Date(document.uploaded_at || document.created_at).toLocaleDateString('en-IN', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric'
+                        })}
+                      </span>
+                    </div>
+
                     {document.expiry_date && (
                       <div
                         className={`flex items-center gap-1.5 ${
-                          expired ? "text-red-600" : expiringSoon ? "text-amber-600" : ""
+                          expired ? "text-red-600" : expiringSoon ? "text-amber-600" : "text-slate-600"
                         }`}
                       >
-                        <Calendar className="h-3 w-3" />
-                        <span>
-                          Expires: {new Date(document.expiry_date).toLocaleDateString()}
+                        <Clock className="h-3.5 w-3.5" />
+                        <span className="truncate">
+                          Exp: {new Date(document.expiry_date).toLocaleDateString('en-IN', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric'
+                          })}
                         </span>
                       </div>
                     )}
-                    <div className="flex items-center gap-1.5">
-                      <span>Uploaded {new Date(document.created_at).toLocaleDateString()}</span>
-                    </div>
+
+                    {document.uploader && (
+                      <div className="flex items-center gap-1.5 text-slate-600 col-span-2">
+                        <User className="h-3.5 w-3.5 text-slate-400" />
+                        <span className="truncate">Uploaded by {document.uploader.name}</span>
+                      </div>
+                    )}
                   </div>
 
+                  {/* Expiry Warning */}
+                  {expiringSoon && !expired && (
+                    <div className="mb-4 p-2 bg-amber-50 border border-amber-200 rounded-md">
+                      <div className="flex items-center gap-2 text-xs text-amber-800">
+                        <AlertCircle className="h-3.5 w-3.5" />
+                        <span className="font-medium">Expiring soon - Please renew</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {expired && (
+                    <div className="mb-4 p-2 bg-red-50 border border-red-200 rounded-md">
+                      <div className="flex items-center gap-2 text-xs text-red-800">
+                        <AlertCircle className="h-3.5 w-3.5" />
+                        <span className="font-medium">Document expired</span>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Actions */}
-                  <div className="flex items-center gap-2 pt-3 border-t">
+                  <div className="flex items-center gap-2 pt-4 border-t">
                     <Button
                       onClick={() => handleView(document)}
                       variant="outline"
@@ -413,14 +521,16 @@ export default function MyDocumentsPage() {
                       onClick={() => handleDownload(document)}
                       variant="outline"
                       size="sm"
+                      className="flex-1"
                     >
-                      <Download className="h-4 w-4" />
+                      <Download className="h-4 w-4 mr-1.5" />
+                      Download
                     </Button>
                     <Button
                       onClick={() => handleDelete(document)}
                       variant="outline"
                       size="sm"
-                      className="text-destructive hover:text-destructive"
+                      className="text-destructive hover:text-destructive hover:bg-red-50"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
