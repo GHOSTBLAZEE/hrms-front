@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import apiClient from "@/lib/apiClient";
+import { QUERY_CONFIGS } from "@/config/queryConfig";
 
 export function useAuth() {
   const { data, isLoading } = useQuery({
@@ -9,6 +10,7 @@ export function useAuth() {
       return res.data;
     },
     retry: false,
+    ...QUERY_CONFIGS.USER_SESSION,
   });
 
   return {

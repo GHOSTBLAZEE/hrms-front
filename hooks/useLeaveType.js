@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as api from "@/lib/leaveTypeApi";
 import { toast } from "sonner";
+import { QUERY_CONFIGS } from "@/config/queryConfig";
 
 export function useLeaveTypes() {
   const qc = useQueryClient();
@@ -8,6 +9,7 @@ export function useLeaveTypes() {
   const q = useQuery({
     queryKey: ["leavetypes"],
     queryFn: api.getLeaveTypesApi,
+    ...QUERY_CONFIGS.STATIC,
   });
 
   const create = useMutation({
