@@ -21,10 +21,20 @@ export default function ApprovalsPage({
   defaultType,
   hideTabs = false,
 }) {
+  /* --------------------------------
+   | All hooks MUST come first — no exceptions
+   | (React Rules of Hooks)
+   |---------------------------------*/
   const { permissions = [] } = useAuth();
 
+  const [status, setStatus] = useState("pending");
+  const [rowSelection, setRowSelection] = useState({});
+  const [openBulkReject, setOpenBulkReject] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [activeApprovalId, setActiveApprovalId] = useState(null);
+
   /* --------------------------------
-   | Permission guard
+   | Permission check (derived, not a hook)
    |---------------------------------*/
   const canApprove = useMemo(
     () =>
@@ -34,58 +44,42 @@ export default function ApprovalsPage({
     [permissions]
   );
 
-  if (!canApprove) {
-    return (
-      <div className="p-6">
-        <div className="rounded-md border p-6 text-sm text-muted-foreground">
-          You don't have permission to view approvals.
-        </div>
-      </div>
-    );
-  }
-
-  /* --------------------------------
-   | Local state
-   |---------------------------------*/
-  const [status, setStatus] = useState("pending");
-  const [rowSelection, setRowSelection] = useState({});
-  const [openBulkReject, setOpenBulkReject] = useState(false);
-
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [activeApprovalId, setActiveApprovalId] = useState(null);
-
   /* --------------------------------
    | Queries
+   | FIX: Fetch all statuses once so tab counts come from
+   | already-cached data — no extra network requests.
    |---------------------------------*/
-  const approvalsQ = useApprovals({ status });
-  const pendingQ = useApprovals({ status: "pending" });
+  const pendingQ  = useApprovals({ status: "pending" });
   const approvedQ = useApprovals({ status: "approved" });
   const rejectedQ = useApprovals({ status: "rejected" });
+
+  // Active tab data comes from the already-fetched queries above
+  const approvalsQ =
+    status === "pending"  ? pendingQ  :
+    status === "approved" ? approvedQ :
+                            rejectedQ;
 
   const approvals = approvalsQ.data ?? [];
   const isLoading = approvalsQ.isLoading;
 
   const counts = useMemo(
     () => ({
-      pending: pendingQ.data?.length ?? 0,
+      pending:  pendingQ.data?.length  ?? 0,
       approved: approvedQ.data?.length ?? 0,
       rejected: rejectedQ.data?.length ?? 0,
     }),
     [pendingQ.data, approvedQ.data, rejectedQ.data]
   );
 
-  const approvalDetailsQ = useApprovalDetails(
-    activeApprovalId,
-    drawerOpen
-  );
+  const approvalDetailsQ = useApprovalDetails(activeApprovalId, drawerOpen);
 
   /* --------------------------------
    | Selected items
    |---------------------------------*/
   const selectedIds = useMemo(() => {
     return Object.keys(rowSelection)
-      .filter(key => rowSelection[key])
-      .map(index => approvals[parseInt(index)]?.id)
+      .filter((key) => rowSelection[key])
+      .map((index) => approvals[parseInt(index)]?.id)
       .filter(Boolean);
   }, [rowSelection, approvals]);
 
@@ -93,10 +87,11 @@ export default function ApprovalsPage({
    | Mutations
    |---------------------------------*/
   const { approve, reject } = useApprovalActions();
-  
+
   // Support both React Query v4 (isLoading) and v5 (isPending)
-  const isBusy = (approve.isPending ?? approve.isLoading) || 
-                 (reject.isPending ?? reject.isLoading);
+  const isBusy =
+    (approve.isPending ?? approve.isLoading) ||
+    (reject.isPending ?? reject.isLoading);
 
   /* --------------------------------
    | Effects
@@ -108,6 +103,19 @@ export default function ApprovalsPage({
   }, [status]);
 
   /* --------------------------------
+   | Permission guard — AFTER all hooks
+   |---------------------------------*/
+  if (!canApprove) {
+    return (
+      <div className="p-6">
+        <div className="rounded-md border p-6 text-sm text-muted-foreground">
+          You don't have permission to view approvals.
+        </div>
+      </div>
+    );
+  }
+
+  /* --------------------------------
    | Bulk actions
    |---------------------------------*/
   const bulkApprove = async () => {
@@ -116,7 +124,7 @@ export default function ApprovalsPage({
     const ids = [...selectedIds];
     setRowSelection({});
 
-    toastInfo(`Processing ${ids.length} approval${ids.length > 1 ? 's' : ''}…`);
+    toastInfo(`Processing ${ids.length} approval${ids.length > 1 ? "s" : ""}…`);
 
     let success = 0;
     let failed = 0;
@@ -126,13 +134,13 @@ export default function ApprovalsPage({
         await approve.mutateAsync({ approvalId: id });
         success++;
       } catch (err) {
-        console.error('Approval failed:', err);
+        console.error("Approval failed:", err);
         failed++;
       }
     }
 
     if (failed === 0) {
-      toastSuccess(`${success} approval${success > 1 ? 's' : ''} completed`);
+      toastSuccess(`${success} approval${success > 1 ? "s" : ""} completed`);
     } else {
       toastError(`${success} approved, ${failed} failed`);
     }
@@ -145,7 +153,7 @@ export default function ApprovalsPage({
     setRowSelection({});
     setOpenBulkReject(false);
 
-    toastInfo(`Rejecting ${ids.length} request${ids.length > 1 ? 's' : ''}…`);
+    toastInfo(`Rejecting ${ids.length} request${ids.length > 1 ? "s" : ""}…`);
 
     let success = 0;
     let failed = 0;
@@ -155,20 +163,20 @@ export default function ApprovalsPage({
         await reject.mutateAsync({ approvalId: id, reason });
         success++;
       } catch (err) {
-        console.error('Rejection failed:', err);
+        console.error("Rejection failed:", err);
         failed++;
       }
     }
 
     if (failed === 0) {
-      toastSuccess(`${success} request${success > 1 ? 's' : ''} rejected`);
+      toastSuccess(`${success} request${success > 1 ? "s" : ""} rejected`);
     } else {
       toastError(`${success} rejected, ${failed} failed`);
     }
   };
 
   /* --------------------------------
-   | Single actions (DRAWER)
+   | Single actions (drawer)
    |---------------------------------*/
   const approveSingle = async () => {
     if (!activeApprovalId) return;
@@ -176,35 +184,27 @@ export default function ApprovalsPage({
     toastInfo("Approving request…");
 
     try {
-      await approve.mutateAsync({
-        approvalId: activeApprovalId,
-      });
-
+      await approve.mutateAsync({ approvalId: activeApprovalId });
       toastSuccess("Request approved");
       setDrawerOpen(false);
       setActiveApprovalId(null);
     } catch (err) {
-      console.error('Approval failed:', err);
+      console.error("Approval failed:", err);
       toastError("Failed to approve request");
     }
   };
 
-  // ✅ FIX: This now properly accepts the reason parameter from the drawer
   const rejectSingle = async (reason) => {
     if (!activeApprovalId) return;
     toastInfo("Rejecting request…");
 
     try {
-      await reject.mutateAsync({
-        approvalId: activeApprovalId,
-        reason,
-      });
-
+      await reject.mutateAsync({ approvalId: activeApprovalId, reason });
       toastSuccess("Request rejected");
       setDrawerOpen(false);
       setActiveApprovalId(null);
     } catch (err) {
-      console.error('Rejection failed:', err);
+      console.error("Rejection failed:", err);
       toastError("Failed to reject request");
     }
   };
@@ -255,11 +255,7 @@ export default function ApprovalsPage({
             selectable={status === "pending"}
             rowSelection={rowSelection}
             onRowSelectionChange={setRowSelection}
-            globalSearchKeys={[
-              "employee.name",
-              "type",
-              "status",
-            ]}
+            globalSearchKeys={["employee.name", "type", "status"]}
             onRowClick={(row) => {
               if (isBusy) return;
               setActiveApprovalId(row.id);
@@ -275,10 +271,13 @@ export default function ApprovalsPage({
         onClose={() => setOpenBulkReject(false)}
         isLoading={reject.isPending ?? reject.isLoading}
         onConfirm={bulkRejectConfirm}
-        title={selectedIds.length > 1 ? `Reject ${selectedIds.length} Requests` : "Reject Request"}
+        title={
+          selectedIds.length > 1
+            ? `Reject ${selectedIds.length} Requests`
+            : "Reject Request"
+        }
       />
 
-      {/* ✅ FIX: Pass rejectSingle (which accepts reason) instead of opening dialog */}
       <ApprovalDrawer
         open={drawerOpen}
         onClose={() => !isBusy && setDrawerOpen(false)}

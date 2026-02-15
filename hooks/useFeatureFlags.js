@@ -1,61 +1,61 @@
 "use client";
 
-import { useState, useEffect, useContext, createContext } from "react";
+import { createContext, useContext } from "react";
+import { useQuery } from "@tanstack/react-query";
+import apiClient from "@/lib/apiClient";
+import { QUERY_CONFIGS } from "@/config/queryConfig";
 
-// Feature Flags Context
+/* ----------------------------------------------------------------
+ | Context
+ |----------------------------------------------------------------*/
 const FeatureFlagsContext = createContext({
   featureFlags: {},
   isLoading: true,
 });
 
+/* ----------------------------------------------------------------
+ | Provider — replaces hardcoded mock flags with real API data
+ |
+ | Endpoint: GET /api/v1/company/feature-flags  (or equivalent)
+ | Falls back to an empty object so all features default to disabled
+ | if the endpoint doesn't exist yet.
+ |----------------------------------------------------------------*/
 export function FeatureFlagsProvider({ children }) {
-  const [featureFlags, setFeatureFlags] = useState({});
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    // Fetch feature flags from your API
-    const fetchFeatureFlags = async () => {
-      try {
-        // Replace with your actual API endpoint
-        // const response = await fetch("/api/feature-flags");
-        // const data = await response.json();
-        
-        // Mock feature flags for now
-        const mockFlags = {
-          enable_recruitment: true,
-          enable_training_module: true,
-          enable_performance: true,
-          enable_payroll: true,
-          enable_time_tracking: true,
-          enable_expenses: true,
-          enable_assets: true,
-          enable_integrity_reports: false, // Beta feature
-          enable_ai_insights: false, // Not yet released
-        };
-
-        setFeatureFlags(mockFlags);
-      } catch (error) {
-        console.error("Failed to fetch feature flags:", error);
-        setFeatureFlags({});
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchFeatureFlags();
-
-    // Optional: Set up polling for real-time updates
-    // const interval = setInterval(fetchFeatureFlags, 60000); // Poll every minute
-    // return () => clearInterval(interval);
-  }, []);
+  const { data: featureFlags, isLoading } = useQuery({
+    queryKey: ["company-feature-flags"],
+    queryFn: async () => {
+      const res = await apiClient.get("/api/v1/company/feature-flags");
+      return res.data?.data ?? res.data ?? {};
+    },
+    // Feature flags almost never change mid-session
+    ...QUERY_CONFIGS.STATIC,
+    retry: 1,
+    throwOnError: false,
+    // If your backend doesn't have this endpoint yet, return defaults
+    // so sidebar/navigation still renders correctly
+    placeholderData: {
+      enable_payroll: true,
+      enable_recruitment: false,
+      enable_training_module: false,
+      enable_performance: false,
+      enable_time_tracking: false,
+      enable_expenses: false,
+      enable_assets: false,
+      enable_integrity_reports: false,
+      enable_ai_insights: false,
+    },
+  });
 
   return (
-    <FeatureFlagsContext.Provider value={{ featureFlags, isLoading }}>
+    <FeatureFlagsContext.Provider value={{ featureFlags: featureFlags ?? {}, isLoading }}>
       {children}
     </FeatureFlagsContext.Provider>
   );
 }
 
+/* ----------------------------------------------------------------
+ | Hook
+ |----------------------------------------------------------------*/
 export function useFeatureFlags() {
   const context = useContext(FeatureFlagsContext);
   if (context === undefined) {
@@ -64,7 +64,9 @@ export function useFeatureFlags() {
   return context;
 }
 
-// Helper function to check if a feature is enabled
+/* ----------------------------------------------------------------
+ | Convenience helper for checking a single flag
+ |----------------------------------------------------------------*/
 export function useFeatureFlag(flagName) {
   const { featureFlags, isLoading } = useFeatureFlags();
   return {
