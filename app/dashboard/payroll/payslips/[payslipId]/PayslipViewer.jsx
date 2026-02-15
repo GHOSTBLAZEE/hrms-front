@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import apiClient from "@/lib/apiClient";
 import { format } from "date-fns";
+import { exportFile } from "@/lib/exportFile";
 
 /* =========================================================
  | API
@@ -109,13 +110,10 @@ export default function PayslipViewerPage({ payslipId }) {
 
         <button
           className="text-sm underline"
-          onClick={() =>
-            window.open(
-              payslip.actions?.download_pdf ??
-                `/api/v1/payslips/${payslip.id}/pdf`,
-              "_blank"
-            )
-          }
+          onClick={() => exportFile(
+              `/api/v1/payslips/${payslip.id}/pdf`,
+              `payslip-${payslip.id}.pdf`
+            )}
         >
           Download PDF
         </button>

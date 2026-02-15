@@ -197,7 +197,7 @@ export default function PayrollTab({ employee }) {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <Link href={`/dashboard/payroll/payslips/${payslip.id}`}>
+                        <Link href='#'>
                           <Button variant="ghost" size="sm" className="gap-1">
                             <Eye className="h-3 w-3" />
                             View

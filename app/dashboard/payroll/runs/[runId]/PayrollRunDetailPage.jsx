@@ -123,7 +123,7 @@ export default function PayrollRunDetailPage({ runId }) {
       <div className="flex justify-end">
         <FinalizePayrollDialog
           disabled={!canFinalize}
-          loading={finalizeMutation.isLoading}
+          loading={finalizeMutation.isPending}
           onConfirm={() => finalizeMutation.mutate()}
         />
       </div>
