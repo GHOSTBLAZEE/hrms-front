@@ -14,10 +14,9 @@ const CompanyFeatureContext = createContext({
 });
 
 /* ----------------------------------------------------------------
- | Provider — replaces mock data with a real API call
- |
- | Endpoint: GET /api/v1/companies/current
- | Falls back gracefully if the endpoint doesn't exist yet.
+ | Provider
+ | Now uses useQuery — works because QueryClientProvider
+ | is the outermost wrapper in providers.jsx
  |----------------------------------------------------------------*/
 export function CompanyFeatureProvider({ children }) {
   const { data: companyFeature, isLoading } = useQuery({
@@ -26,15 +25,15 @@ export function CompanyFeatureProvider({ children }) {
       const res = await apiClient.get("/api/v1/companies/current");
       return res.data?.data ?? res.data ?? null;
     },
-    // Company settings almost never change mid-session — use STATIC config
     ...QUERY_CONFIGS.STATIC,
-    // Don't throw on error — fall back to null so the app still renders
     retry: 1,
     throwOnError: false,
   });
 
   return (
-    <CompanyFeatureContext.Provider value={{ companyFeature: companyFeature ?? null, isLoading }}>
+    <CompanyFeatureContext.Provider
+      value={{ companyFeature: companyFeature ?? null, isLoading }}
+    >
       {children}
     </CompanyFeatureContext.Provider>
   );
@@ -46,7 +45,9 @@ export function CompanyFeatureProvider({ children }) {
 export function useCompanyFeature() {
   const context = useContext(CompanyFeatureContext);
   if (context === undefined) {
-    throw new Error("useCompanyFeature must be used within a CompanyFeatureProvider");
+    throw new Error(
+      "useCompanyFeature must be used within a CompanyFeatureProvider"
+    );
   }
   return context;
 }
